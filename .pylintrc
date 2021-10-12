@@ -1,0 +1,7 @@
+[TYPECHECK]
+
+max-line-length=79
+disable=bad-continuation
+max-statements=10
+ignore-long-lines=(this_is_a_test_case|https://)
+generated-members=torch.*,orjson.*

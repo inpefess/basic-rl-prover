@@ -1,0 +1,13 @@
+venv*/
+*.*~
+*~
+test-results/
+.coverage
+dist/
+.ipynb_checkpoints/
+__pycache__/
+.dir-locals.el
+.coverage*
+*.log
+ray_results/
+doc/build/
