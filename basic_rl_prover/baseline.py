@@ -20,9 +20,10 @@ from typing import List
 
 import gym
 from gym_saturation.agent_testing import SizeAgeAgent, episode
+from gym_saturation.logic_ops.utils import WrongRefutationProofError
 
 
-def evaluate_baseline(problem_list: List[str]) -> None:
+def evaluate_baseline(problem_list: List[str], max_episode_steps: int) -> None:
     """
     baseline evaluation
 
@@ -33,10 +34,13 @@ def evaluate_baseline(problem_list: List[str]) -> None:
     ...         "resources", "TPTP-mock", "Problems", "TST", "TST001-1.p"
     ...     ))
     ... )
-    >>> evaluate_baseline([problem_filename])
-    TST001-1.p 1.0 3
+    >>> evaluate_baseline([problem_filename], 100)
+    TST001-1.p True 2
+    >>> evaluate_baseline([problem_filename], 1)
+    TST001-1.p False 1
 
     :param problem_list: a list of filenames of TPTP problems
+    :param max_episode_steps: a maximal number of saturation algorithm steps
     :returns:
     """
     for filename in problem_list:
@@ -44,11 +48,16 @@ def evaluate_baseline(problem_list: List[str]) -> None:
             gym.make(
                 "GymSaturation-v0", problem_list=[filename], max_clauses=1000
             ),
-            max_episode_steps=100,
+            max_episode_steps=max_episode_steps,
         )
+        episode(env, SizeAgeAgent(5, 1))
+        try:
+            success = env.tstp_proof is not None
+        except WrongRefutationProofError:
+            success = False
         print(
             os.path.basename(filename),
-            episode(env, SizeAgeAgent(5, 1)).reward,
+            success,
             # pylint: disable=protected-access
             env._elapsed_steps,
             flush=True,
