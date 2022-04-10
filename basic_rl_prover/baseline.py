@@ -16,14 +16,26 @@ Heuristics Mixture Baseline
 ===========================
 """
 import os
-from typing import List
+from typing import List, Optional
 
 import gym
 from gym_saturation.agent_testing import SizeAgeAgent, episode
+from gym_saturation.envs import SaturationEnv
 from gym_saturation.logic_ops.utils import WrongRefutationProofError
 
 
-def evaluate_baseline(problem_list: List[str], max_episode_steps: int) -> None:
+def _proof_found(env: SaturationEnv) -> bool:
+    try:
+        return env.tstp_proof is not None
+    except WrongRefutationProofError:
+        return False
+
+
+def evaluate_baseline(
+    problem_list: List[str],
+    max_episode_steps: int,
+    vampire_binary_path: Optional[str] = None,
+) -> None:
     """
     baseline evaluation
 
@@ -38,23 +50,33 @@ def evaluate_baseline(problem_list: List[str], max_episode_steps: int) -> None:
     TST003-1.p True 4
     >>> evaluate_baseline([problem_filename], 1)
     TST003-1.p False 1
+    >>> evaluate_baseline([problem_filename], 100, "vampire")
+    TST003-1.p True 3
 
     :param problem_list: a list of filenames of TPTP problems
     :param max_episode_steps: a maximal number of saturation algorithm steps
+    :param vampire_binary_path: a full path to Vampire prover binary.
+        If not specified, a default Python implementation is used instead
     :returns:
     """
     for filename in problem_list:
-        env = gym.wrappers.TimeLimit(
-            gym.make(
+        if vampire_binary_path is None:
+            basic_env = gym.make(
                 "GymSaturation-v0", problem_list=[filename], max_clauses=1000
-            ),
+            )
+        else:
+            basic_env = gym.make(
+                "GymVampire-v0",
+                problem_list=[filename],
+                max_clauses=1000,
+                vampire_binary_path=vampire_binary_path,
+            )
+        env = gym.wrappers.TimeLimit(
+            basic_env,
             max_episode_steps=max_episode_steps,
         )
         episode(env, SizeAgeAgent(5, 1))
-        try:
-            success = env.tstp_proof is not None
-        except WrongRefutationProofError:
-            success = False
+        success = _proof_found(env)
         print(
             os.path.basename(filename),
             success,
