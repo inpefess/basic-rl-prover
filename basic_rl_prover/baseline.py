@@ -29,15 +29,15 @@ def evaluate_baseline(problem_list: List[str], max_episode_steps: int) -> None:
 
     >>> from importlib.resources import files
     >>> problem_filename = os.path.join(
-    ...     files("basic_rl_prover")
+    ...     files("gym_saturation")
     ...     .joinpath(os.path.join(
-    ...         "resources", "TPTP-mock", "Problems", "TST", "TST001-1.p"
+    ...         "resources", "TPTP-mock", "Problems", "TST", "TST003-1.p"
     ...     ))
     ... )
     >>> evaluate_baseline([problem_filename], 100)
-    TST001-1.p True 2
+    TST003-1.p True 4
     >>> evaluate_baseline([problem_filename], 1)
-    TST001-1.p False 1
+    TST003-1.p False 1
 
     :param problem_list: a list of filenames of TPTP problems
     :param max_episode_steps: a maximal number of saturation algorithm steps

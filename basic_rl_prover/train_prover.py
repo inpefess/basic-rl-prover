@@ -70,9 +70,9 @@ def train_a_prover(
     >>> shutil.rmtree("ray_results", ignore_errors=True)
     >>> from importlib.resources import files
     >>> problem_filename = os.path.join(
-    ...     files("basic_rl_prover")
+    ...     files("gym_saturation")
     ...     .joinpath(os.path.join(
-    ...         "resources", "TPTP-mock", "Problems", "TST", "TST001-1.p"
+    ...         "resources", "TPTP-mock", "Problems", "TST", "TST003-1.p"
     ...     ))
     ... )
     >>> # this takes several seconds
@@ -86,12 +86,12 @@ def train_a_prover(
     ...     },
     ... )  # doctest: +ELLIPSIS
     == Status ==
-    .../resources/TPTP-mock/Problems/TST/TST001-1.p 1 2 [1 0]
+    .../resources/TPTP-mock/Problems/TST/TST003-1.p 1 4 [1 2 0 3]
     ...
     >>> from basic_rl_prover.test_prover import upload_and_test_agent
     >>> upload_and_test_agent([problem_filename])
-    tensor([[0.3991, 0.6009]], grad_fn=<SoftmaxBackward0>)
-    TST001-1.p 1.0 2 [0, 1]
+    tensor([[0.4039, 0.5961]], grad_fn=<SoftmaxBackward0>)
+    TST003-1.p 1.0 4 [1, 0, 2, 3]
     >>> # to reproduce the results
     >>> from basic_rl_prover.constants import TRAIN_PROBLEMS
     >>> train_a_prover(TRAIN_PROBLEMS, None, None)  # doctest: +SKIP
