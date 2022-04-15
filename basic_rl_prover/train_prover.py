@@ -55,6 +55,7 @@ def get_config(
         "dueling": False,
         "learning_starts": 1,
         "lr": 0.01,
+        "disable_env_checking": True,
     }
     if custom_env_config is not None:
         basic_config.update(custom_env_config)
