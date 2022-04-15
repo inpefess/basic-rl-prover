@@ -20,15 +20,6 @@ from typing import List, Optional
 
 import gym
 from gym_saturation.agent_testing import SizeAgeAgent, episode
-from gym_saturation.envs import SaturationEnv
-from gym_saturation.logic_ops.utils import WrongRefutationProofError
-
-
-def _proof_found(env: SaturationEnv) -> bool:
-    try:
-        return env.tstp_proof is not None
-    except WrongRefutationProofError:
-        return False
 
 
 def evaluate_baseline(
@@ -47,11 +38,11 @@ def evaluate_baseline(
     ...     ))
     ... )
     >>> evaluate_baseline([problem_filename], 100)
-    TST003-1.p True 4
+    TST003-1.p 1.0 4
     >>> evaluate_baseline([problem_filename], 1)
-    TST003-1.p False 1
+    TST003-1.p 0.0 1
     >>> evaluate_baseline([problem_filename], 100, "vampire")
-    TST003-1.p True 3
+    TST003-1.p 1.0 3
 
     :param problem_list: a list of filenames of TPTP problems
     :param max_episode_steps: a maximal number of saturation algorithm steps
@@ -75,11 +66,10 @@ def evaluate_baseline(
             basic_env,
             max_episode_steps=max_episode_steps,
         )
-        episode(env, SizeAgeAgent(5, 1))
-        success = _proof_found(env)
+        reward = episode(env, SizeAgeAgent(5, 1))
         print(
             os.path.basename(filename),
-            success,
+            reward,
             # pylint: disable=protected-access
             env._elapsed_steps,
             flush=True,
