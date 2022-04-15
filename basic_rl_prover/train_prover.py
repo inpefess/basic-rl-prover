@@ -92,12 +92,12 @@ def train_a_prover(
     ...     },
     ... )  # doctest: +ELLIPSIS
     == Status ==
-    .../resources/TPTP-mock/Problems/TST/TST003-1.p 1 4 [1 2 0 3]
+    .../resources/TPTP-mock/Problems/TST/TST003-1.p 1 4 [0 1 2 3]
     ...
     >>> from basic_rl_prover.test_prover import upload_and_test_agent
     >>> upload_and_test_agent([problem_filename])
-    tensor([[0.4039, 0.5961]], grad_fn=<SoftmaxBackward0>)
-    TST003-1.p 1.0 4 [1, 0, 2, 3]
+    tensor([[0.2650, 0.7350]], grad_fn=<SoftmaxBackward0>)
+    TST003-1.p 1.0 4 [0, 1, 2, 3]
     >>> # to reproduce the results
     >>> from basic_rl_prover.constants import TRAIN_PROBLEMS
     >>> train_a_prover(TRAIN_PROBLEMS, None, None)  # doctest: +SKIP
@@ -114,7 +114,7 @@ def train_a_prover(
     ...     "vampire",
     ... )  # doctest: +ELLIPSIS
     == Status ==
-    .../resources/TPTP-mock/Problems/TST/TST003-1.p 1 3 [1 2 0]
+    .../resources/TPTP-mock/Problems/TST/TST003-1.p 1 3 [2 1 0]
     ...
 
     :param problem_list: a list of filenames of TPTP problems

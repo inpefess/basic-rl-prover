@@ -48,7 +48,9 @@ class ActionSelectionModel(DQNTorchModel):
         super().__init__(
             obs_space, action_space, num_outputs, model_config, name, **kw
         )
-        self.heuristics_weights = torch.nn.Parameter(torch.rand((1, 2)))
+        self.heuristics_weights = torch.nn.Parameter(
+            torch.tensor(((0.0, 1.0),))
+        )
 
     def forward(self, input_dict, state, seq_lens):
         avail_actions = torch.log(input_dict["obs"]["avail_actions"] + EPSILON)
