@@ -16,39 +16,60 @@ Heuristics Mixture Baseline
 ===========================
 """
 import os
-from typing import List
+from typing import List, Optional
 
 import gym
 from gym_saturation.agent_testing import SizeAgeAgent, episode
 
 
-def evaluate_baseline(problem_list: List[str]) -> None:
+def evaluate_baseline(
+    problem_list: List[str],
+    max_episode_steps: int,
+    vampire_binary_path: Optional[str] = None,
+) -> None:
     """
     baseline evaluation
 
     >>> from importlib.resources import files
     >>> problem_filename = os.path.join(
-    ...     files("basic_rl_prover")
+    ...     files("gym_saturation")
     ...     .joinpath(os.path.join(
-    ...         "resources", "TPTP-mock", "Problems", "TST", "TST001-1.p"
+    ...         "resources", "TPTP-mock", "Problems", "TST", "TST003-1.p"
     ...     ))
     ... )
-    >>> evaluate_baseline([problem_filename])
-    TST001-1.p 1.0 3
+    >>> evaluate_baseline([problem_filename], 100)
+    TST003-1.p 1.0 4
+    >>> evaluate_baseline([problem_filename], 1)
+    TST003-1.p 0.0 1
+    >>> evaluate_baseline([problem_filename], 100, "vampire")
+    TST003-1.p 1.0 3
 
     :param problem_list: a list of filenames of TPTP problems
+    :param max_episode_steps: a maximal number of saturation algorithm steps
+    :param vampire_binary_path: a full path to Vampire prover binary.
+        If not specified, a default Python implementation is used instead
     :returns:
     """
     for filename in problem_list:
-        env = gym.wrappers.TimeLimit(
-            gym.make(
+        if vampire_binary_path is None:
+            basic_env = gym.make(
                 "GymSaturation-v0", problem_list=[filename], max_clauses=1000
-            ),
-            max_episode_steps=100,
+            )
+        else:
+            basic_env = gym.make(
+                "GymVampire-v0",
+                problem_list=[filename],
+                max_clauses=1000,
+                vampire_binary_path=vampire_binary_path,
+            )
+        env = gym.wrappers.TimeLimit(
+            basic_env,
+            max_episode_steps=max_episode_steps,
         )
+        reward = episode(env, SizeAgeAgent(5, 1))
         print(
             os.path.basename(filename),
-            episode(env, SizeAgeAgent(5, 1)).reward,
+            reward,
             # pylint: disable=protected-access
             env._elapsed_steps,
             flush=True,

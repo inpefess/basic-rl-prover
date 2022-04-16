@@ -86,9 +86,18 @@ def custom_env_creator(env_config: dict) -> gym.Wrapper:
     >>> env = custom_env_creator({"problem_list": []})
     >>> env.observation_space["avail_actions"].shape[1]
     2
+    >>> env = custom_env_creator(
+    ...     {"problem_list": [], "vampire_binary_path": "vampire"}
+    ... )
+    >>> env.observation_space["avail_actions"].shape[1]
+    2
 
     :param env_config: a custom environment config
-    :returns: a ``SaturationEnv`` with age, size, and role features
+    :returns: a ``SaturationEnv`` or ``VampireEnv`` (if ``vampire_binary_path``
+        key is present in ``env_config``) with age and size features
     """
-    env = gym.make("GymSaturation-v0", **env_config)
+    if "vampire_binary_path" in env_config:
+        env = gym.make("GymVampire-v0", **env_config)
+    else:
+        env = gym.make("GymSaturation-v0", **env_config)
     return AgeSizeFeatures(env, age_size_role_features)
