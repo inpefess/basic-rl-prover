@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "age-size-prover"
+name = "basic-rl-prover"
 version = "0.0.1"
 description = ""
 authors = ["Boris Shminke <boris@shminke.ml>"]
@@ -13,6 +13,7 @@ torch = "*"
 GPUtil = "*"
 sphinx-rtd-theme = "*"
 sphinx-autodoc-typehints = "*"
+protobuf = "<3.21"
 
 [tool.poetry.dev-dependencies]
 black = "*"

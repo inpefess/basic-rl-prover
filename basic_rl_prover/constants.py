@@ -20,7 +20,7 @@ import os
 from glob import glob
 
 TPTP_PROBLEMS_FOLDER = os.path.join(
-    os.environ["WORK"], "data", "TPTP-v7.5.0", "Problems"
+    os.environ["WORK"], "data", "TPTP-v8.0.0", "Problems"
 )
 # train on set theory problems
 TRAIN_PROBLEMS = sorted(
@@ -28,7 +28,7 @@ TRAIN_PROBLEMS = sorted(
         os.path.join(
             TPTP_PROBLEMS_FOLDER,
             "SET",
-            "SET*-*.p",
+            "SET00*-*.p",
         )
     )
 )
@@ -37,8 +37,8 @@ TEST_PROBLEMS = sorted(
     glob(
         os.path.join(
             TPTP_PROBLEMS_FOLDER,
-            "GRP",
-            "GRP*-*.p",
+            "SET",
+            "SET01*-*.p",
         )
     )
 )

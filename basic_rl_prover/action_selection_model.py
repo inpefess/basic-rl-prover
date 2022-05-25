@@ -16,10 +16,10 @@ A Model for Selecting a Parametrics Action
 ==========================================
 """
 import torch
+from gym.spaces import Box
 from ray.rllib.agents.dqn.dqn_torch_model import DQNTorchModel
+from ray.rllib.models.torch.fcnet import FullyConnectedNetwork
 from ray.rllib.utils.torch_utils import FLOAT_MAX, FLOAT_MIN
-
-EPSILON = 1e-10
 
 
 # pylint: disable=abstract-method
@@ -43,23 +43,45 @@ class ActionSelectionModel(DQNTorchModel):
 
     # pylint: disable=too-many-arguments
     def __init__(
-        self, obs_space, action_space, num_outputs, model_config, name, **kw
+        self,
+        obs_space,
+        action_space,
+        num_outputs,
+        model_config,
+        name,
+        **kwargs
     ):
-        super().__init__(
-            obs_space, action_space, num_outputs, model_config, name, **kw
+        DQNTorchModel.__init__(
+            self,
+            obs_space,
+            action_space,
+            num_outputs,
+            model_config,
+            name,
+            **kwargs
         )
-        self.heuristics_weights = torch.nn.Parameter(
-            torch.tensor(((0.0, 1.0),))
+        self.action_embed_model = FullyConnectedNetwork(
+            Box(
+                -1,
+                1,
+                shape=(500, 256),
+            ),
+            action_space,
+            256,
+            model_config,
+            name + "_action_embed",
         )
 
     def forward(self, input_dict, state, seq_lens):
-        avail_actions = torch.log(input_dict["obs"]["avail_actions"] + EPSILON)
-        action_mask = torch.clamp(
-            torch.log(input_dict["obs"]["action_mask"]), FLOAT_MIN, FLOAT_MAX
+        avail_actions = input_dict["obs"]["avail_actions"]
+        action_mask = input_dict["obs"]["action_mask"]
+        action_embed, _ = self.action_embed_model(
+            {"obs": input_dict["obs"]["avail_actions"]}
         )
-        action_weights = torch.exp(
-            (avail_actions * torch.nn.Softmax(1)(self.heuristics_weights))
-            .sum(axis=-1)
-            .squeeze(-1)
-        )
-        return action_weights + action_mask, state
+        intent_vector = torch.unsqueeze(action_embed, 1)
+        action_logits = torch.sum(avail_actions * intent_vector, dim=2)
+        inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
+        return action_logits + inf_mask, state
+
+    def value_function(self):
+        return self.action_embed_model.value_function()

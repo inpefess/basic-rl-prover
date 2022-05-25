@@ -14,71 +14,24 @@
 """ a customisation of a ``gym-saturation`` environment """
 import gym
 import numpy as np
-import orjson
-from gym.wrappers import TransformObservation
 from gym_saturation.logic_ops.utils import clause_length
 
+from basic_rl_prover.custom_features import CustomFeatures
 
-def size_age_features(observation: dict) -> dict:
+
+def size_age_features(clause: dict) -> np.ndarray:
     """
-    >>> import numpy as np
     >>> from gym_saturation.clause_space import ClauseSpace
-    >>> observation = {
-    ...     "real_obs": map(orjson.dumps, 2 * ClauseSpace().sample()),
-    ...     "action_mask": np.array([1, 0])
-    ... }
-    >>> size_age_features(observation)
-    {'action_mask': array([1, 0]), 'avail_actions': array([[1. ..., 1. ...],
-           [0.36787945, 0.36787945]], dtype=float32)}
-    >>> observation = {
-    ...     "real_obs": map(orjson.dumps, 20 * ClauseSpace().sample()),
-    ...     "action_mask": np.array([1, 0])
-    ... }
-    >>> size_age_features(observation)
-    {'a...rray([1, 0]), 'avail_actions': array([[1.0000000e+00, 1.0000000e+00],
-           [4.1399378e-08, 4.1399378e-08]], dtype=float32)}
+    >>> clause = ClauseSpace().sample()[0]
+    >>> size_age_features(clause)
+    array([1., 1.], dtype=float32)
 
     :param observation: an observation dict from ``SaturationEnv``
     :returns: observation dict with age and size features instead of clauses
     """
-    clauses = list(map(orjson.loads, observation["real_obs"]))
-    features = np.array(
-        [[clause_length(clause), clause["birth_step"]] for clause in clauses],
-        np.float32,
+    return 1 / (
+        1 + np.array([clause_length(clause), clause["birth_step"]], np.float32)
     )
-    features = np.exp(-features.argsort(axis=0).argsort(axis=0)).astype(
-        np.float32
-    )
-    features_num = len(observation["action_mask"])
-    if features_num >= features.shape[0]:
-        padded_features = np.pad(
-            features,
-            ((0, features_num - features.shape[0]), (0, 0)),
-        )
-    else:
-        padded_features = features[:features_num]
-    return {
-        "action_mask": observation["action_mask"],
-        "avail_actions": padded_features,
-    }
-
-
-class SizeAgeFeatures(TransformObservation):
-    """a wrapper adding size and age features to ``SaturationEnv``"""
-
-    def __init__(self, env, f):
-        super().__init__(env, f)
-        avail_actions = gym.spaces.Box(
-            low=0,
-            high=np.infty,
-            shape=(self.observation_space["action_mask"].shape[0], 2),
-        )
-        self.observation_space = gym.spaces.Dict(
-            {
-                "action_mask": self.observation_space["action_mask"],
-                "avail_actions": avail_actions,
-            }
-        )
 
 
 def size_age_env_creator(env_config: dict) -> gym.Wrapper:
@@ -100,4 +53,4 @@ def size_age_env_creator(env_config: dict) -> gym.Wrapper:
         env = gym.make("GymVampire-v0", **env_config)
     else:
         env = gym.make("GymSaturation-v0", **env_config)
-    return SizeAgeFeatures(env, size_age_features)
+    return CustomFeatures(env, size_age_features, 2)

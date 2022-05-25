@@ -23,8 +23,10 @@ from ray import tune
 from ray.tune.registry import register_env
 
 from basic_rl_prover.action_selection_model import ActionSelectionModel
+
+# from basic_rl_prover.size_age_environment import size_age_env_creator
+from basic_rl_prover.ast2vec_environment import ast2vec_env_creator
 from basic_rl_prover.custom_dqn_trainer import CustomDQNTrainer
-from basic_rl_prover.size_age_environment import size_age_env_creator
 
 
 def get_config(
@@ -38,24 +40,34 @@ def get_config(
     :param vampire_binary_path: a full path to Vampire binary
     :returns: a config
     """
-    register_env("age_size_saturation", size_age_env_creator)
-    env_config = {"problem_list": problem_list, "max_clauses": 1000}
+    register_env("ast2vec_saturation", ast2vec_env_creator)
+    env_config = {"problem_list": problem_list, "max_clauses": 500}
     if vampire_binary_path is not None:
         env_config["vampire_binary_path"] = vampire_binary_path
     basic_config = {
         "seed": 777,
-        "env": "age_size_saturation",
+        "env": "ast2vec_saturation",
         "env_config": env_config,
         "framework": "torch",
         "model": {"custom_model": ActionSelectionModel},
         "batch_mode": "complete_episodes",
-        "horizon": 100,
+        "horizon": 30,
         "num_workers": 10,
         "hiddens": [],
         "dueling": False,
         "learning_starts": 1,
         "lr": 0.01,
         "disable_env_checking": True,
+        "replay_buffer_config": {
+            "capacity": 10000,
+        },
+        "timesteps_per_iteration": 1,
+        "exploration_config": {
+            "type": "EpsilonGreedy",
+            "initial_epsilon": 1.0,
+            "final_epsilon": 0.0,
+            "epsilon_timesteps": 1,
+        },
     }
     if custom_env_config is not None:
         basic_config.update(custom_env_config)
@@ -71,9 +83,7 @@ def train_a_prover(
     """
     run ray pipeline
 
-    >>> os.environ["WORK"] = "."
-    >>> import shutil
-    >>> shutil.rmtree("ray_results", ignore_errors=True)
+    >>> os.environ["WORK"] = getfixture("tmp_path").as_posix() # noqa: F821
     >>> from importlib.resources import files
     >>> problem_filename = os.path.join(
     ...     files("gym_saturation")
@@ -96,13 +106,11 @@ def train_a_prover(
     ...
     >>> from basic_rl_prover.test_prover import upload_and_test_agent
     >>> upload_and_test_agent([problem_filename])
-    tensor([[0.2650, 0.7350]], grad_fn=<SoftmaxBackward0>)
     TST003-1.p 1.0 4 [0, 1, 2, 3]
     >>> # to reproduce the results
     >>> from basic_rl_prover.constants import TRAIN_PROBLEMS
     >>> train_a_prover(TRAIN_PROBLEMS, None, None)  # doctest: +SKIP
     >>> # test with Vampire backend
-    >>> shutil.rmtree("ray_results", ignore_errors=True)
     >>> train_a_prover(
     ...     [problem_filename],
     ...     {"training_iteration": 1},
@@ -114,7 +122,7 @@ def train_a_prover(
     ...     "vampire",
     ... )
     == Status ==
-    .../resources/TPTP-mock/Problems/TST/TST003-1.p 1 3 [2 1 0]
+    .../resources/TPTP-mock/Problems/TST/TST003-1.p 1 2 [0 1]
     ...
 
     :param problem_list: a list of filenames of TPTP problems
