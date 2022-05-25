@@ -27,14 +27,14 @@ def size_age_features(observation: dict) -> dict:
     ...     "real_obs": map(orjson.dumps, 2 * ClauseSpace().sample()),
     ...     "action_mask": np.array([1, 0])
     ... }
-    >>> size_age_features(observation)  # doctest: +ELLIPSIS
+    >>> size_age_features(observation)
     {'action_mask': array([1, 0]), 'avail_actions': array([[1. ..., 1. ...],
            [0.36787945, 0.36787945]], dtype=float32)}
     >>> observation = {
     ...     "real_obs": map(orjson.dumps, 20 * ClauseSpace().sample()),
     ...     "action_mask": np.array([1, 0])
     ... }
-    >>> size_age_features(observation)  # doctest: +ELLIPSIS
+    >>> size_age_features(observation)
     {'a...rray([1, 0]), 'avail_actions': array([[1.0000000e+00, 1.0000000e+00],
            [4.1399378e-08, 4.1399378e-08]], dtype=float32)}
 

@@ -90,7 +90,7 @@ def train_a_prover(
     ...         "train_batch_size": 1,
     ...         "num_workers": 1,
     ...     },
-    ... )  # doctest: +ELLIPSIS
+    ... )
     == Status ==
     .../resources/TPTP-mock/Problems/TST/TST003-1.p 1 4 [0 1 2 3]
     ...
@@ -112,7 +112,7 @@ def train_a_prover(
     ...         "num_workers": 1,
     ...     },
     ...     "vampire",
-    ... )  # doctest: +ELLIPSIS
+    ... )
     == Status ==
     .../resources/TPTP-mock/Problems/TST/TST003-1.p 1 3 [2 1 0]
     ...
