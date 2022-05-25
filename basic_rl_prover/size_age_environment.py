@@ -19,7 +19,7 @@ from gym.wrappers import TransformObservation
 from gym_saturation.logic_ops.utils import clause_length
 
 
-def age_size_role_features(observation: dict) -> dict:
+def size_age_features(observation: dict) -> dict:
     """
     >>> import numpy as np
     >>> from gym_saturation.clause_space import ClauseSpace
@@ -63,8 +63,8 @@ def age_size_role_features(observation: dict) -> dict:
     }
 
 
-class AgeSizeFeatures(TransformObservation):
-    """a wrapper adding age and size features to ``SaturationEnv``"""
+class SizeAgeFeatures(TransformObservation):
+    """a wrapper adding size and age features to ``SaturationEnv``"""
 
     def __init__(self, env, f):
         super().__init__(env, f)
@@ -81,12 +81,12 @@ class AgeSizeFeatures(TransformObservation):
         )
 
 
-def custom_env_creator(env_config: dict) -> gym.Wrapper:
+def size_age_env_creator(env_config: dict) -> gym.Wrapper:
     """
-    >>> env = custom_env_creator({"problem_list": []})
+    >>> env = size_age_env_creator({"problem_list": []})
     >>> env.observation_space["avail_actions"].shape[1]
     2
-    >>> env = custom_env_creator(
+    >>> env = size_age_env_creator(
     ...     {"problem_list": [], "vampire_binary_path": "vampire"}
     ... )
     >>> env.observation_space["avail_actions"].shape[1]
@@ -94,10 +94,10 @@ def custom_env_creator(env_config: dict) -> gym.Wrapper:
 
     :param env_config: a custom environment config
     :returns: a ``SaturationEnv`` or ``VampireEnv`` (if ``vampire_binary_path``
-        key is present in ``env_config``) with age and size features
+        key is present in ``env_config``) with size and age features
     """
     if "vampire_binary_path" in env_config:
         env = gym.make("GymVampire-v0", **env_config)
     else:
         env = gym.make("GymSaturation-v0", **env_config)
-    return AgeSizeFeatures(env, age_size_role_features)
+    return SizeAgeFeatures(env, size_age_features)

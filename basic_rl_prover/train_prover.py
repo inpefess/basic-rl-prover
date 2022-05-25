@@ -24,7 +24,7 @@ from ray.tune.registry import register_env
 
 from basic_rl_prover.action_selection_model import ActionSelectionModel
 from basic_rl_prover.custom_dqn_trainer import CustomDQNTrainer
-from basic_rl_prover.custom_environment import custom_env_creator
+from basic_rl_prover.size_age_environment import size_age_env_creator
 
 
 def get_config(
@@ -38,7 +38,7 @@ def get_config(
     :param vampire_binary_path: a full path to Vampire binary
     :returns: a config
     """
-    register_env("age_size_saturation", custom_env_creator)
+    register_env("age_size_saturation", size_age_env_creator)
     env_config = {"problem_list": problem_list, "max_clauses": 1000}
     if vampire_binary_path is not None:
         env_config["vampire_binary_path"] = vampire_binary_path

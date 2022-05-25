@@ -23,7 +23,7 @@ from ray.tune.analysis import ExperimentAnalysis
 from torch.nn import Softmax
 
 from basic_rl_prover.custom_dqn_trainer import CustomDQNTrainer
-from basic_rl_prover.custom_environment import custom_env_creator
+from basic_rl_prover.size_age_environment import size_age_env_creator
 from basic_rl_prover.train_prover import get_config
 
 
@@ -64,7 +64,7 @@ def upload_and_test_agent(problem_list: List[str]) -> None:
     agent, env = get_agent_and_env(problem_list)
     for filename in problem_list:
         env = gym.wrappers.TimeLimit(
-            custom_env_creator(
+            size_age_env_creator(
                 {"problem_list": [filename], "max_clauses": 1000}
             ),
             max_episode_steps=100,
