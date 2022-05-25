@@ -91,7 +91,7 @@ class CustomDQNTrainer(DQNTrainer):
         )
 
         # pylint: disable=too-many-statements
-        def update_prio(item):
+        def update_prio(item):  # pragma: no cover
             samples, info_dict = item
             if config.get("prioritized_replay"):
                 prio_dict = {}
@@ -118,7 +118,7 @@ class CustomDQNTrainer(DQNTrainer):
 
         post_fn = config.get("before_learn_on_batch") or (lambda b, *a: b)
         if config["simple_optimizer"]:
-            train_step_op = TrainOneStep(workers)
+            train_step_op = TrainOneStep(workers)  # pragma: no cover
         else:
             train_step_op = MultiGPUTrainOneStep(  # type: ignore
                 workers=workers,

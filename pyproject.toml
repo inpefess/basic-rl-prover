@@ -36,3 +36,31 @@ src_paths = ["basic_rl_prover"]
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--doctest-modules --cov basic_rl_prover --cov-report term-missing --cov-report xml --cov-fail-under=100 --junit-xml test-results/basic-rl-prover.xml"
+testpaths = ["basic_rl_prover"]
+doctest_optionflags = "NORMALIZE_WHITESPACE ELLIPSIS"
+
+[tool.pylint.master]
+disable = "bad-continuation"
+
+[tool.pylint.format]
+max-line-length = 79
+ignore-long-lines = "(this_is_a_test_case|https://)"
+
+[tool.pylint.design]
+max-statements = 10
+
+[tool.pylint.typecheck]
+generated-members = ["orjson", "torch"]
+
+[tool.mypy]
+show_error_codes = true
+incremental = false
+disable_error_code = "no-redef"
+
+[[tool.mypy.overrides]]
+module = ["gym.*"]
+ignore_missing_imports = true
