@@ -16,20 +16,19 @@ A Model for Selecting a Parametrics Action
 ==========================================
 """
 import torch
-from gym.spaces import Box
 from ray.rllib.agents.dqn.dqn_torch_model import DQNTorchModel
-from ray.rllib.models.torch.fcnet import FullyConnectedNetwork
 from ray.rllib.utils.torch_utils import FLOAT_MAX, FLOAT_MIN
+from torch.nn import Linear, ReLU, Sequential, Softmax
 
 
 # pylint: disable=abstract-method
 class ActionSelectionModel(DQNTorchModel):
     """
-    A model for selecting a best action
+    A model for selecting the best action
 
     >>> from gym.spaces import Box, Discrete
     >>> action_mask = torch.tensor([0, 1, 0, 0])
-    >>> obs_shape = (4, 2)
+    >>> obs_shape = (4, 256)
     >>> avail_actions = torch.rand((1, ) + obs_shape)
     >>> model = ActionSelectionModel(
     ...     obs_space=Box(0, 1, obs_shape), action_space=Discrete(2),
@@ -60,28 +59,22 @@ class ActionSelectionModel(DQNTorchModel):
             name,
             **kwargs
         )
-        self.action_embed_model = FullyConnectedNetwork(
-            Box(
-                -1,
-                1,
-                shape=(500, 256),
-            ),
-            action_space,
-            256,
-            model_config,
-            name + "_action_embed",
+        self.action_embed_model = Sequential(
+            Linear(256, 128), ReLU(), Linear(128, 256), ReLU(), Softmax(dim=1)
+        )
+        self.state_embed_model = Sequential(
+            Linear(256, 128), ReLU(), Linear(128, 256), ReLU(), Softmax(dim=1)
         )
 
     def forward(self, input_dict, state, seq_lens):
         avail_actions = input_dict["obs"]["avail_actions"]
         action_mask = input_dict["obs"]["action_mask"]
-        action_embed, _ = self.action_embed_model(
-            {"obs": input_dict["obs"]["avail_actions"]}
+        embedded_actions = self.action_embed_model(
+            avail_actions.reshape(-1, avail_actions.shape[2])
+        ).view(*avail_actions.shape)
+        intent_vector = torch.unsqueeze(
+            self.state_embed_model(embedded_actions.sum(axis=1)), 1
         )
-        intent_vector = torch.unsqueeze(action_embed, 1)
         action_logits = torch.sum(avail_actions * intent_vector, dim=2)
         inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
         return action_logits + inf_mask, state
-
-    def value_function(self):
-        return self.action_embed_model.value_function()

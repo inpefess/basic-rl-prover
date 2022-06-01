@@ -51,7 +51,7 @@ def get_config(
         "framework": "torch",
         "model": {"custom_model": ActionSelectionModel},
         "batch_mode": "complete_episodes",
-        "horizon": 30,
+        "horizon": 100,
         "num_workers": 10,
         "hiddens": [],
         "dueling": False,
@@ -62,12 +62,8 @@ def get_config(
             "capacity": 10000,
         },
         "timesteps_per_iteration": 1,
-        "exploration_config": {
-            "type": "EpsilonGreedy",
-            "initial_epsilon": 1.0,
-            "final_epsilon": 0.0,
-            "epsilon_timesteps": 1,
-        },
+        "explore": False,
+        "num_gpus": 1,
     }
     if custom_env_config is not None:
         basic_config.update(custom_env_config)
