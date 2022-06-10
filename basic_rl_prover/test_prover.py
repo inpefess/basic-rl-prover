@@ -16,38 +16,33 @@ Trained Prover Evaluation
 =========================
 """
 import os
-from typing import List, Tuple
+from typing import List
 
 import gym
 from ray.tune.analysis import ExperimentAnalysis
-from torch.nn import Softmax
 
+from basic_rl_prover.ast2vec_environment import ast2vec_env_creator
 from basic_rl_prover.custom_dqn_trainer import CustomDQNTrainer
-from basic_rl_prover.custom_environment import custom_env_creator
 from basic_rl_prover.train_prover import get_config
 
 
-def get_agent_and_env(
-    problem_list: List[str],
-) -> Tuple[CustomDQNTrainer, gym.Wrapper]:
+def get_agent() -> CustomDQNTrainer:
     """
     read an agent from the best checkpoint
 
     :param problem_list: a list of filenames of TPTP problems
-    :returns: a trained agent and and the environment in which it was trained
+    :returns: a trained agent
     """
     analysis = ExperimentAnalysis(
         os.path.join(os.environ["WORK"], "ray_results", "basic_rl_prover"),
-        default_metric="episode_reward_mean",
+        default_metric="episodes_total",
         default_mode="max",
     )
     agent = CustomDQNTrainer(
-        config=get_config(problem_list, {"num_workers": 1})
+        config=get_config([], {"num_workers": 0, "num_gpus": 0})
     )
     agent.restore(analysis.best_checkpoint)
-    print(Softmax(1)(list(agent.get_policy().model.parameters())[0]))
-    env = agent.env_creator(agent.get_config()["env_config"])
-    return agent, env
+    return agent
 
 
 def upload_and_test_agent(problem_list: List[str]) -> None:
@@ -61,11 +56,15 @@ def upload_and_test_agent(problem_list: List[str]) -> None:
     :param problem_list: a list of filenames of TPTP problems
     :returns:
     """
-    agent, env = get_agent_and_env(problem_list)
+    agent = get_agent()
     for filename in problem_list:
         env = gym.wrappers.TimeLimit(
-            custom_env_creator(
-                {"problem_list": [filename], "max_clauses": 1000}
+            ast2vec_env_creator(
+                {
+                    "problem_list": [filename],
+                    "max_clauses": 500,
+                    "vampire_binary_path": "vampire",
+                }
             ),
             max_episode_steps=100,
         )

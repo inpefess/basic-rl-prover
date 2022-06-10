@@ -2,7 +2,7 @@ venv*/
 *.*~
 *~
 test-results/
-.coverage
+coverage.xml
 dist/
 .ipynb_checkpoints/
 __pycache__/

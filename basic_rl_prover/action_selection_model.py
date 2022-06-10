@@ -18,18 +18,17 @@ A Model for Selecting a Parametrics Action
 import torch
 from ray.rllib.agents.dqn.dqn_torch_model import DQNTorchModel
 from ray.rllib.utils.torch_utils import FLOAT_MAX, FLOAT_MIN
-
-EPSILON = 1e-10
+from torch.nn import Linear, ReLU, Sequential, Softmax
 
 
 # pylint: disable=abstract-method
 class ActionSelectionModel(DQNTorchModel):
     """
-    A model for selecting a best action
+    A model for selecting the best action
 
     >>> from gym.spaces import Box, Discrete
     >>> action_mask = torch.tensor([0, 1, 0, 0])
-    >>> obs_shape = (4, 2)
+    >>> obs_shape = (4, 256)
     >>> avail_actions = torch.rand((1, ) + obs_shape)
     >>> model = ActionSelectionModel(
     ...     obs_space=Box(0, 1, obs_shape), action_space=Discrete(2),
@@ -43,23 +42,39 @@ class ActionSelectionModel(DQNTorchModel):
 
     # pylint: disable=too-many-arguments
     def __init__(
-        self, obs_space, action_space, num_outputs, model_config, name, **kw
+        self,
+        obs_space,
+        action_space,
+        num_outputs,
+        model_config,
+        name,
+        **kwargs
     ):
-        super().__init__(
-            obs_space, action_space, num_outputs, model_config, name, **kw
+        DQNTorchModel.__init__(
+            self,
+            obs_space,
+            action_space,
+            num_outputs,
+            model_config,
+            name,
+            **kwargs
         )
-        self.heuristics_weights = torch.nn.Parameter(
-            torch.tensor(((0.0, 1.0),))
+        self.action_embed_model = Sequential(
+            Linear(256, 128), ReLU(), Linear(128, 256), ReLU(), Softmax(dim=1)
+        )
+        self.state_embed_model = Sequential(
+            Linear(256, 128), ReLU(), Linear(128, 256), ReLU(), Softmax(dim=1)
         )
 
     def forward(self, input_dict, state, seq_lens):
-        avail_actions = torch.log(input_dict["obs"]["avail_actions"] + EPSILON)
-        action_mask = torch.clamp(
-            torch.log(input_dict["obs"]["action_mask"]), FLOAT_MIN, FLOAT_MAX
+        avail_actions = input_dict["obs"]["avail_actions"]
+        action_mask = input_dict["obs"]["action_mask"]
+        embedded_actions = self.action_embed_model(
+            avail_actions.reshape(-1, avail_actions.shape[2])
+        ).view(*avail_actions.shape)
+        intent_vector = torch.unsqueeze(
+            self.state_embed_model(embedded_actions.sum(axis=1)), 1
         )
-        action_weights = torch.exp(
-            (avail_actions * torch.nn.Softmax(1)(self.heuristics_weights))
-            .sum(axis=-1)
-            .squeeze(-1)
-        )
-        return action_weights + action_mask, state
+        action_logits = torch.sum(avail_actions * intent_vector, dim=2)
+        inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
+        return action_logits + inf_mask, state

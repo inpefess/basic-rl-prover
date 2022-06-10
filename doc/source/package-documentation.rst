@@ -19,7 +19,7 @@ Package Documentation
 
 .. automodule:: basic_rl_prover.constants
    :members:
-.. automodule:: basic_rl_prover.custom_environment
+.. automodule:: basic_rl_prover.size_age_environment
    :members:
 .. automodule:: basic_rl_prover.custom_dqn_policy
    :members:
