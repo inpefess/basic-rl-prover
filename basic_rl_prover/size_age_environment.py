@@ -36,11 +36,19 @@ def size_age_features(clause: dict) -> np.ndarray:
 
 def size_age_env_creator(env_config: dict) -> gym.Wrapper:
     """
-    >>> env = size_age_env_creator({"problem_list": []})
+    >>> import os
+    >>> from glob import glob
+    >>> from importlib.resources import files
+    >>> problem_list = sorted(glob(os.path.join(
+    ...     files("gym_saturation").joinpath("resources"),
+    ...     "TPTP-mock", "Problems", "*", "*-*.p"
+    ...     )
+    ... ))
+    >>> env = size_age_env_creator({"problem_list": problem_list})
     >>> env.observation_space["avail_actions"].shape[1]
     2
     >>> env = size_age_env_creator(
-    ...     {"problem_list": [], "vampire_binary_path": "vampire"}
+    ...     {"problem_list": problem_list, "vampire_binary_path": "vampire"}
     ... )
     >>> env.observation_space["avail_actions"].shape[1]
     2

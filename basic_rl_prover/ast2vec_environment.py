@@ -27,26 +27,28 @@ import orjson
 from basic_rl_prover.custom_features import CustomFeatures
 
 
-def _term_to_java(term: dict) -> Tuple[str, Tuple[str, ...]]:
+def _term_to_python(term: dict) -> Tuple[str, Tuple[str, ...]]:
     if "arguments" in term:
-        arguments = tuple(map(_term_to_java, term["arguments"]))
+        func_name = f"f{term['index']}"
+        arguments = tuple(map(_term_to_python, term["arguments"]))
         return (
-            f"_{term['name']}({','.join(map(itemgetter(0), arguments))})",
+            f"{func_name}({','.join(map(itemgetter(0), arguments))})",
             tuple(chain(*map(itemgetter(1), arguments))),
         )
-    return term["name"], (term["name"],)
+    var_name = f"v{term['index']}"
+    return var_name, (var_name,)
 
 
-def _literal_to_code(literal: dict) -> Tuple[str, Tuple[str, ...]]:
+def _literal_to_python(literal: dict) -> Tuple[str, Tuple[str, ...]]:
     res = "~" if literal["negated"] else ""
     arguments = tuple(
-        _term_to_java(term) for term in literal["atom"]["arguments"]
+        _term_to_python(term) for term in literal["atom"]["arguments"]
     )
-    func_name = literal["atom"]["name"]
-    if func_name != "=":
-        res += f"_{func_name}({','.join(map(itemgetter(0), arguments))})"
+    predicate_name = f"p{literal['atom']['index']}"
+    if predicate_name != "=":
+        res += f"{predicate_name}({','.join(map(itemgetter(0), arguments))})"
     else:
-        res += f"(_{arguments[0][0]} == _{arguments[1][0]})"
+        res += f"({arguments[0][0]} == {arguments[1][0]})"
     return res, tuple(chain(*map(itemgetter(1), arguments)))
 
 
@@ -56,7 +58,7 @@ def _to_python(clause: dict) -> str:
 
     :returns: a Python code snippet representing the clause syntax only
     """
-    literals = tuple(map(_literal_to_code, clause["literals"]))
+    literals = tuple(map(_literal_to_python, clause["literals"]))
     signature = ", ".join(
         sorted(tuple(set(chain(*map(itemgetter(1), literals)))))
     )
@@ -94,11 +96,19 @@ def ast2vec_features(clause: dict, torch_serve_url: str) -> dict:
 
 def ast2vec_env_creator(env_config: dict) -> gym.Wrapper:
     """
-    >>> env = ast2vec_env_creator({"problem_list": []})
+    >>> import os
+    >>> from glob import glob
+    >>> from importlib.resources import files
+    >>> problem_list = sorted(glob(os.path.join(
+    ...     files("gym_saturation").joinpath("resources"),
+    ...     "TPTP-mock", "Problems", "*", "*-*.p"
+    ...     )
+    ... ))
+    >>> env = ast2vec_env_creator({"problem_list": problem_list})
     >>> env.observation_space["avail_actions"].shape[1]
     256
     >>> env = ast2vec_env_creator(
-    ...     {"problem_list": [], "vampire_binary_path": "vampire"}
+    ...     {"problem_list": problem_list, "vampire_binary_path": "vampire"}
     ... )
     >>> env.observation_space["avail_actions"].shape[1]
     256
