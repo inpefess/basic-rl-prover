@@ -13,7 +13,6 @@ torch = "*"
 GPUtil = "*"
 sphinx-rtd-theme = "*"
 sphinx-autodoc-typehints = "*"
-protobuf = "<3.21"
 
 [tool.poetry.dev-dependencies]
 black = "*"

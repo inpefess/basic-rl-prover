@@ -49,7 +49,10 @@ def get_config(
         "env": "ast2vec_saturation",
         "env_config": env_config,
         "framework": "torch",
-        "model": {"custom_model": ActionSelectionModel},
+        "model": {
+            "custom_model": ActionSelectionModel,
+            "custom_model_config": {"embedding_size": 256},
+        },
         "batch_mode": "complete_episodes",
         "horizon": 100,
         "num_workers": 10,

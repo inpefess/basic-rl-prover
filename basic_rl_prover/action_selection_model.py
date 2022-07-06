@@ -28,16 +28,18 @@ class ActionSelectionModel(DQNTorchModel):
 
     >>> from gym.spaces import Box, Discrete
     >>> action_mask = torch.tensor([0, 1, 0, 0])
-    >>> obs_shape = (4, 256)
-    >>> avail_actions = torch.rand((1, ) + obs_shape)
+    >>> embedding_size = 3
+    >>> avail_actions = torch.rand((5, 4, embedding_size))
     >>> model = ActionSelectionModel(
-    ...     obs_space=Box(0, 1, obs_shape), action_space=Discrete(2),
-    ...     model_config={}, name="test", num_outputs=2
+    ...     obs_space=Box(0, 1, (4 * embedding_size, )),
+    ...     action_space=Discrete(2),
+    ...     model_config={}, name="test", num_outputs=2,
+    ...     embedding_size=embedding_size
     ... )
     >>> model({"obs": {
     ...     "avail_actions": avail_actions, "action_mask": action_mask}
-    ... })[0].detach().cpu().argmax().item()
-    1
+    ... })[0].detach().cpu().argmax(axis=1)
+    tensor([1, 1, 1, 1, 1])
     """
 
     # pylint: disable=too-many-arguments
@@ -48,6 +50,7 @@ class ActionSelectionModel(DQNTorchModel):
         num_outputs,
         model_config,
         name,
+        embedding_size,
         **kwargs
     ):
         DQNTorchModel.__init__(
@@ -60,10 +63,18 @@ class ActionSelectionModel(DQNTorchModel):
             **kwargs
         )
         self.action_embed_model = Sequential(
-            Linear(256, 128), ReLU(), Linear(128, 256), ReLU(), Softmax(dim=1)
+            Linear(embedding_size, 128),
+            ReLU(),
+            Linear(128, 256),
+            ReLU(),
+            Softmax(dim=1),
         )
         self.state_embed_model = Sequential(
-            Linear(256, 128), ReLU(), Linear(128, 256), ReLU(), Softmax(dim=1)
+            Linear(256, 128),
+            ReLU(),
+            Linear(128, embedding_size),
+            ReLU(),
+            Softmax(dim=1),
         )
 
     def forward(self, input_dict, state, seq_lens):
@@ -71,7 +82,7 @@ class ActionSelectionModel(DQNTorchModel):
         action_mask = input_dict["obs"]["action_mask"]
         embedded_actions = self.action_embed_model(
             avail_actions.reshape(-1, avail_actions.shape[2])
-        ).view(*avail_actions.shape)
+        ).view(avail_actions.shape[0], avail_actions.shape[1], -1)
         intent_vector = torch.unsqueeze(
             self.state_embed_model(embedded_actions.sum(axis=1)), 1
         )
