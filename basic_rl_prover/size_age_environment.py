@@ -22,12 +22,13 @@ from basic_rl_prover.custom_features import CustomFeatures
 def size_age_features(clause: dict) -> np.ndarray:
     """
     >>> from gym_saturation.clause_space import ClauseSpace
-    >>> clause = ClauseSpace().sample()[0]
+    >>> import orjson
+    >>> clause = orjson.loads(ClauseSpace().sample()[0])
     >>> size_age_features(clause)
     array([1., 1.], dtype=float32)
 
-    :param observation: an observation dict from ``SaturationEnv``
-    :returns: observation dict with age and size features instead of clauses
+    :param clause: a clause in a JSON-like format
+    :returns: age and size of the clause
     """
     return 1 / (
         1 + np.array([clause_length(clause), clause["birth_step"]], np.float32)

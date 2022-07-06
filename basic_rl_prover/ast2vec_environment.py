@@ -72,7 +72,8 @@ def ast2vec_features(clause: dict, torch_serve_url: str) -> dict:
     """
     >>> from gym_saturation.clause_space import ClauseSpace
     >>> test_server = "http://127.0.0.1:8080/predictions/ast2vec"
-    >>> clause = ClauseSpace().sample()[0]
+    >>> import orjson
+    >>> clause = orjson.loads(ClauseSpace().sample()[0])
     >>> embedding = ast2vec_features(clause, test_server)
     >>> len(embedding)
     256
