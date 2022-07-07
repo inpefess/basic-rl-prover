@@ -58,11 +58,11 @@ def get_config(
         "num_workers": 10,
         "hiddens": [],
         "dueling": False,
-        "learning_starts": 1,
         "lr": 0.01,
         "disable_env_checking": True,
         "replay_buffer_config": {
             "capacity": 10000,
+            "learning_starts": 1,
         },
         "timesteps_per_iteration": 1,
         "explore": False,
