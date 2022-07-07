@@ -58,7 +58,7 @@ generated-members = ["orjson", "torch"]
 
 [tool.mypy]
 show_error_codes = true
-incremental = false
+incremental = true
 disable_error_code = "no-redef"
 
 [[tool.mypy.overrides]]
