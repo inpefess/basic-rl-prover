@@ -1,2 +1,3 @@
 include('Axioms/RBI001-0.ax').
-cnf(over_join, hypothesis, over(X, join(Y, Z)) != meet(over(X, Y), over(X, Z))).
+% /v
+cnf(over_join, hypothesis, over(x, join(y, z)) != meet(over(x, y), over(x, z))).
