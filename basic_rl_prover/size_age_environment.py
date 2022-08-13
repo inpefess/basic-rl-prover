@@ -22,12 +22,13 @@ from basic_rl_prover.custom_features import CustomFeatures
 def size_age_features(clause: dict) -> np.ndarray:
     """
     >>> from gym_saturation.clause_space import ClauseSpace
-    >>> clause = ClauseSpace().sample()[0]
+    >>> import orjson
+    >>> clause = orjson.loads(ClauseSpace().sample()[0])
     >>> size_age_features(clause)
     array([1., 1.], dtype=float32)
 
-    :param observation: an observation dict from ``SaturationEnv``
-    :returns: observation dict with age and size features instead of clauses
+    :param clause: a clause in a JSON-like format
+    :returns: age and size of the clause
     """
     return 1 / (
         1 + np.array([clause_length(clause), clause["birth_step"]], np.float32)
@@ -36,11 +37,19 @@ def size_age_features(clause: dict) -> np.ndarray:
 
 def size_age_env_creator(env_config: dict) -> gym.Wrapper:
     """
-    >>> env = size_age_env_creator({"problem_list": []})
+    >>> import os
+    >>> from glob import glob
+    >>> from importlib.resources import files
+    >>> problem_list = sorted(glob(os.path.join(
+    ...     files("gym_saturation").joinpath("resources"),
+    ...     "TPTP-mock", "Problems", "*", "*-*.p"
+    ...     )
+    ... ))
+    >>> env = size_age_env_creator({"problem_list": problem_list})
     >>> env.observation_space["avail_actions"].shape[1]
     2
     >>> env = size_age_env_creator(
-    ...     {"problem_list": [], "vampire_binary_path": "vampire"}
+    ...     {"problem_list": problem_list, "vampire_binary_path": "vampire"}
     ... )
     >>> env.observation_space["avail_actions"].shape[1]
     2

@@ -32,7 +32,7 @@ def _pad_features(features: np.ndarray, features_num: int) -> np.ndarray:
     return padded_features
 
 
-class CustomFeatures(gym.ObservationWrapper):
+class CustomFeatures(gym.Wrapper):
     """a box wrapper for ``SaturationEnv``"""
 
     def __init__(
@@ -60,7 +60,12 @@ class CustomFeatures(gym.ObservationWrapper):
         )
         self.encoded_state: List[np.ndarray] = []
 
-    def observation(self, observation):
+    def reset(self, **kwargs):
+        observation = self.env.reset(**kwargs)
+        self.encoded_state = []
+        return self._transform(observation)
+
+    def _transform(self, observation):
         new_clauses = list(
             map(
                 orjson.loads,
@@ -77,3 +82,7 @@ class CustomFeatures(gym.ObservationWrapper):
             "action_mask": observation["action_mask"],
             "avail_actions": padded_features,
         }
+
+    def step(self, action):
+        observation, reward, done, info = self.env.step(action)
+        return self._transform(observation), reward, done, info

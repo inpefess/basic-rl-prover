@@ -26,7 +26,7 @@ from basic_rl_prover.custom_dqn_trainer import CustomDQNTrainer
 from basic_rl_prover.train_prover import get_config
 
 
-def get_agent() -> CustomDQNTrainer:
+def get_agent(problem_list: List[str]) -> CustomDQNTrainer:
     """
     read an agent from the best checkpoint
 
@@ -39,7 +39,7 @@ def get_agent() -> CustomDQNTrainer:
         default_mode="max",
     )
     agent = CustomDQNTrainer(
-        config=get_config([], {"num_workers": 0, "num_gpus": 0})
+        config=get_config(problem_list, {"num_workers": 0, "num_gpus": 0})
     )
     agent.restore(analysis.best_checkpoint)
     return agent
@@ -56,7 +56,7 @@ def upload_and_test_agent(problem_list: List[str]) -> None:
     :param problem_list: a list of filenames of TPTP problems
     :returns:
     """
-    agent = get_agent()
+    agent = get_agent(problem_list)
     for filename in problem_list:
         env = gym.wrappers.TimeLimit(
             ast2vec_env_creator(

@@ -49,17 +49,20 @@ def get_config(
         "env": "ast2vec_saturation",
         "env_config": env_config,
         "framework": "torch",
-        "model": {"custom_model": ActionSelectionModel},
+        "model": {
+            "custom_model": ActionSelectionModel,
+            "custom_model_config": {"embedding_size": 256},
+        },
         "batch_mode": "complete_episodes",
         "horizon": 100,
         "num_workers": 10,
         "hiddens": [],
         "dueling": False,
-        "learning_starts": 1,
         "lr": 0.01,
         "disable_env_checking": True,
         "replay_buffer_config": {
             "capacity": 10000,
+            "learning_starts": 1,
         },
         "timesteps_per_iteration": 1,
         "explore": False,
@@ -102,7 +105,7 @@ def train_a_prover(
     ...
     >>> from basic_rl_prover.test_prover import upload_and_test_agent
     >>> upload_and_test_agent([problem_filename])
-    TST003-1.p 1.0 4 [0, 1, 2, 3]
+    TST003-1.p 1.0 2 [0, 1]
     >>> # to reproduce the results
     >>> from basic_rl_prover.constants import TRAIN_PROBLEMS
     >>> train_a_prover(TRAIN_PROBLEMS, None, None)  # doctest: +SKIP

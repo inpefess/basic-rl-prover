@@ -28,7 +28,7 @@ TRAIN_PROBLEMS = sorted(
         os.path.join(
             TPTP_PROBLEMS_FOLDER,
             "SET",
-            "SET00*-*.p",
+            "SET001-1.p",
         )
     )
 )
