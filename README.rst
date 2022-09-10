@@ -97,3 +97,8 @@ Reporting issues or problems with the software
 
 Questions and bug reports are welcome on `the
 tracker <https://github.com/inpefess/basic-rl-prover/issues>`__.
+
+How to Cite
+===========
+
+If you want to cite this prototype in your research paper, please use the following arXiv entry: `<https://arxiv.org/abs/2209.02562>`__.

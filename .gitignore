@@ -12,3 +12,12 @@ __pycache__/
 ray_results/
 doc/build/
 .mypy_cache
+*.aux
+*.bbl
+*.blg
+*.out
+*.pdf
+*.aux
+*.nav
+*.snm
+*.toc
