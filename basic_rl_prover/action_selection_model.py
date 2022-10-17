@@ -15,8 +15,10 @@
 A Model for Selecting a Parametrics Action
 ==========================================
 """
+from typing import Dict, List, Tuple
+
 import torch
-from ray.rllib.agents.dqn.dqn_torch_model import DQNTorchModel
+from ray.rllib.algorithms.dqn.dqn_torch_model import DQNTorchModel
 from ray.rllib.utils.torch_utils import FLOAT_MAX, FLOAT_MIN
 from torch.nn import Linear, ReLU, Sequential, Softmax
 
@@ -77,7 +79,13 @@ class ActionSelectionModel(DQNTorchModel):
             Softmax(dim=1),
         )
 
-    def forward(self, input_dict, state, seq_lens):
+    def forward(
+        self,
+        input_dict: Dict[str, Dict[str, torch.Tensor]],
+        state: List[torch.Tensor],
+        seq_lens: torch.Tensor,
+    ) -> Tuple[torch.Tensor, List[torch.Tensor]]:
+        """Call the model with the given input tensors and state."""
         avail_actions = input_dict["obs"]["avail_actions"]
         action_mask = input_dict["obs"]["action_mask"]
         embedded_actions = self.action_embed_model(

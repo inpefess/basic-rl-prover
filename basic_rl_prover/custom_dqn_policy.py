@@ -25,7 +25,7 @@ from gym_saturation.envs.saturation_env import (
     PROBLEM_FILENAME,
     STATE_DIFF_UPDATED,
 )
-from ray.rllib.agents.dqn.dqn import DQNTorchPolicy
+from ray.rllib.algorithms.dqn.dqn import DQNTorchPolicy
 from ray.rllib.evaluation import Episode
 from ray.rllib.policy.policy import Policy
 from ray.rllib.policy.sample_batch import SampleBatch

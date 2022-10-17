@@ -42,7 +42,9 @@ class CustomFeatures(gym.Wrapper):
         features_num: int,
     ):
         super().__init__(env)
-        observation_space = self.observation_space  # type: ignore
+        observation_space: gym.spaces.Dict = (
+            self.observation_space  # type: ignore
+        )
         avail_actions = gym.spaces.Box(
             low=-1,
             high=1,
