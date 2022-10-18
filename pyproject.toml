@@ -21,6 +21,7 @@ gym-saturation = "*"
 # importlib-metadata = "*"
 # pre-commit = "*"
 # sphinx-rtd-theme = "*"
+tptp-lark-parser = "*"
 
 [tool.poetry.group.dev.dependencies]
 jupyterlab = "*"
@@ -45,7 +46,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--doctest-modules --cov basic_rl_prover --cov-report term-missing --cov-report xml --cov-fail-under=100 --junit-xml test-results/basic-rl-prover.xml"
+addopts = "--doctest-modules --cov basic_rl_prover --cov-report term-missing --cov-report xml --cov-fail-under=99 --junit-xml test-results/basic-rl-prover.xml"
 testpaths = ["basic_rl_prover"]
 doctest_optionflags = "NORMALIZE_WHITESPACE ELLIPSIS"
 
