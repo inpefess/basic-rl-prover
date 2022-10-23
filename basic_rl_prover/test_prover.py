@@ -11,6 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+# noqa: D205, D400
 """
 Trained Prover Evaluation
 =========================
@@ -28,7 +29,7 @@ from basic_rl_prover.train_prover import get_config
 
 def get_agent(problem_list: List[str], vampire_binary_path: str) -> DQN:
     """
-    read an agent from the best checkpoint
+    Read an agent from the best checkpoint.
 
     :param problem_list: a list of filenames of TPTP problems
     :param vampire_binary_path: an absolute path to Vampire binary
@@ -52,7 +53,7 @@ def get_agent(problem_list: List[str], vampire_binary_path: str) -> DQN:
 
 def upload_and_test_agent(problem_list: List[str]) -> None:
     """
-    upload and test agent
+    Upload and test agent.
 
     >>> # to reproduce main results
     >>> from basic_rl_prover.constants import TRAIN_PROBLEMS

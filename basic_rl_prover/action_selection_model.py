@@ -11,22 +11,25 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+# noqa: D205, D400
 """
 A Model for Selecting a Parametrics Action
 ==========================================
 """
-from typing import Dict, List, Tuple
+from typing import Dict, List, Sequence, Tuple
 
+import gym
 import torch
 from ray.rllib.algorithms.dqn.dqn_torch_model import DQNTorchModel
 from ray.rllib.utils.torch_utils import FLOAT_MAX, FLOAT_MIN
+from ray.rllib.utils.typing import ModelConfigDict
 from torch.nn import Linear, ReLU, Sequential, Softmax
 
 
 # pylint: disable=abstract-method
 class ActionSelectionModel(DQNTorchModel):
     """
-    A model for selecting the best action
+    A model for selecting the best action.
 
     >>> from gym.spaces import Box, Discrete
     >>> action_mask = torch.tensor([0, 1, 0, 0])
@@ -44,25 +47,42 @@ class ActionSelectionModel(DQNTorchModel):
     tensor([1, 1, 1, 1, 1])
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-locals
     def __init__(
         self,
-        obs_space,
-        action_space,
-        num_outputs,
-        model_config,
-        name,
-        embedding_size,
-        **kwargs
+        obs_space: gym.spaces.Space,
+        action_space: gym.spaces.Space,
+        num_outputs: int,
+        model_config: ModelConfigDict,
+        name: str,
+        embedding_size: int,
+        *,
+        q_hiddens: Sequence[int] = (256,),
+        dueling: bool = False,
+        dueling_activation: str = "relu",
+        num_atoms: int = 1,
+        use_noisy: bool = False,
+        v_min: float = -10.0,
+        v_max: float = 10.0,
+        sigma0: float = 0.5,
+        add_layer_norm: bool = False
     ):
-        DQNTorchModel.__init__(
-            self,
+        """Initialize variables of this model."""
+        super().__init__(
             obs_space,
             action_space,
             num_outputs,
             model_config,
             name,
-            **kwargs
+            q_hiddens=q_hiddens,
+            dueling=dueling,
+            dueling_activation=dueling_activation,
+            num_atoms=num_atoms,
+            use_noisy=use_noisy,
+            v_min=v_min,
+            v_max=v_max,
+            sigma0=sigma0,
+            add_layer_norm=add_layer_norm,
         )
         self.action_embed_model = Sequential(
             Linear(embedding_size, 128),

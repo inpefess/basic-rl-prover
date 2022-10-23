@@ -11,6 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+# noqa: D205, D400
 """
 a wrapper over ``gym-saturation`` environment using ast2vec model to embed
 logical clauses
@@ -39,7 +40,7 @@ def _pad_features(features: np.ndarray, features_num: int) -> np.ndarray:
 
 
 class AST2VecFeatures(gym.Wrapper):
-    """a box wrapper for ``SaturationEnv``"""
+    """A box wrapper for ``SaturationEnv``."""
 
     _torch_serve_url = "http://127.0.0.1:8080/predictions/ast2vec"
 
@@ -48,6 +49,7 @@ class AST2VecFeatures(gym.Wrapper):
         env,
         features_num: int,
     ):
+        """Init all the things."""
         super().__init__(env)
         observation_space: gym.spaces.Dict = (
             self.observation_space  # type: ignore
@@ -70,6 +72,7 @@ class AST2VecFeatures(gym.Wrapper):
         self.tptp_parser = TPTPParser(extendable=True)
 
     def reset(self, **kwargs):
+        """Reset the environment."""
         observation = self.env.reset(**kwargs)
         self.encoded_state = []
         return self._transform(observation)
@@ -94,11 +97,14 @@ class AST2VecFeatures(gym.Wrapper):
         }
 
     def step(self, action):
+        """Apply the agent's action."""
         observation, reward, done, info = self.env.step(action)
         return self._transform(observation), reward, done, info
 
     def ast2vec_features(self, literals_str: str) -> dict:
         """
+        Encode literals using ast2vec.
+
         :param literals_str: literals to encode
         :returns: observation dict with ast2vec encoding instead of clauses
         """
@@ -139,11 +145,6 @@ def _literal_to_python(literal: Literal) -> Tuple[str, Tuple[str, ...]]:
 
 
 def _to_python(clause: Clause) -> str:
-    """
-    see :ref:`TPTPParser <tptp-parser>` for the usage examples
-
-    :returns: a Python code snippet representing the clause syntax only
-    """
     literals = tuple(map(_literal_to_python, clause.literals))
     signature = ", ".join(
         sorted(tuple(set(chain(*map(itemgetter(1), literals)))))
@@ -156,6 +157,8 @@ def _to_python(clause: Clause) -> str:
 
 def ast2vec_env_creator(env_config: dict) -> gym.Wrapper:
     """
+    Create the wrapped environment.
+
     >>> import os
     >>> from glob import glob
     >>> from importlib.resources import files

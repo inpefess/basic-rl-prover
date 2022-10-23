@@ -15,6 +15,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+# noqa: D205, D400
 """
 Custom Replay Buffer
 =====================
@@ -42,7 +43,7 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 
 def propagate_reward(sample_batch: SampleBatch) -> None:
     """
-    propagates reward from the last step of a proof to all relevant steps
+    Propagates reward from the last step of a proof to all relevant steps.
 
     :param sample_batch: batch is modified by this function!
     :returns:
@@ -66,6 +67,8 @@ def propagate_reward(sample_batch: SampleBatch) -> None:
 
 class CustomReplayBuffer(ReplayBuffer):
     """
+    A custom replay buffer.
+
     >>> import numpy as np
     >>> from gym.spaces import Box, Discrete
     >>> clause1 = {"class": "Clause", "processed": True, "literals": [], "label": "this_is_a_test_case", "birth_step": 1, "inference_parents": ["initial"], "inference_rule": "success"}
@@ -110,6 +113,7 @@ class CustomReplayBuffer(ReplayBuffer):
 
     @override(ReplayBuffer)
     def add(self, batch: SampleBatchType, **kwargs) -> None:
+        """Propagate reward and add only the episodes with positive reward."""
         if (
             isinstance(batch, SampleBatch)
             and self.storage_unit == StorageUnit.TIMESTEPS

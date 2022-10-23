@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" Fixtures for unit tests live here """
+"""Fixtures for unit tests live here."""
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
@@ -20,15 +20,11 @@ from pytest import fixture
 
 
 class DummyHTTPHandler(BaseHTTPRequestHandler):
-    """a dummy handler transforming strings to vectors"""
+    """A dummy handler transforming strings to vectors."""
 
     # pylint: disable=invalid-name
     def do_POST(self) -> None:
-        """
-        always respond with 256 float ones as a dummy embedding
-
-        :returns:
-        """
+        """Respond with 256 float ones as a dummy embedding."""
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
@@ -37,7 +33,7 @@ class DummyHTTPHandler(BaseHTTPRequestHandler):
 
 @fixture(autouse=True, scope="session")
 def http_server():
-    """a simplistic HTTPS server mocking TorchServe behaviour"""
+    """Mock TorchServe behaviour with a simplistic HTTP server."""
     with HTTPServer(("localhost", 8080), DummyHTTPHandler) as server:
         thread = Thread(target=server.serve_forever)
         thread.daemon = True

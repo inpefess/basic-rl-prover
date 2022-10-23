@@ -5,6 +5,7 @@ PACKAGE_NAME=basic_rl_prover
 cd doc
 make clean html
 cd ..
+pydocstyle ${PACKAGE_NAME}
 pylint ${PACKAGE_NAME}
 mypy ${PACKAGE_NAME}
 pytest
