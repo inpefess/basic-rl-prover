@@ -19,36 +19,13 @@ Basic Reinforcement Learning Prover
 
 ``basic-rl-prover`` is an example of using the `Ray Projects
 reinforcement learning library
-<https://docs.ray.io/en/latest/rllib/index.html>`_ and `an OpenAI gym
-environment for saturation provers
+<https://docs.ray.io/en/latest/rllib/index.html>`_, `ast2vec encoder
+for abstract syntax trees <https://gitlab.com/bpaassen/ast2vec>`_ and
+`an OpenAI gym environment for saturation provers
 <https://pypi.org/project/gym-saturation>`_ to train an automated
-theorem prover using only two simple heuristics: the clause length
-and the clause order of appearance in a proof state. After training,
-the prover achieves the results comparable to a well-known 5:1
-combination of these heuristics.
+theorem prover.
 
-.. list-table:: learned heuristics combination vs default combination
-   :header-rows: 1
-
-   * - Problem set
-     - set theory problems (used for training)
-     - group theory problems (not used for training)
-   * - Solved only by the baseline
-     - 8
-     - 2
-   * - Solved only by the trained agent
-     - 0
-     - 2
-   * - Solved by both algorithms
-     - 28
-     - 17
-   * - Total problems
-     - 800
-     - 895
-
-It's important to notice that both the trained and the default
-provers are saturation provers limited to 100 steps and 1000 clauses
-in a proof state.
+It's only a proof-of-concept now.
        
 How to Install
 ==============
