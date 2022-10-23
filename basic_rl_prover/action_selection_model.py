@@ -13,8 +13,8 @@
 #   limitations under the License.
 # noqa: D205, D400
 """
-A Model for Selecting a Parametrics Action
-==========================================
+A Model for Selecting a Parametric Action
+=========================================
 """
 from typing import Dict, List, Sequence, Tuple
 
@@ -67,7 +67,7 @@ class ActionSelectionModel(DQNTorchModel):
         sigma0: float = 0.5,
         add_layer_norm: bool = False
     ):
-        """Initialize variables of this model."""
+        """Initialise variables of this model."""
         super().__init__(
             obs_space,
             action_space,

@@ -49,7 +49,7 @@ class AST2VecFeatures(gym.Wrapper):
         env,
         features_num: int,
     ):
-        """Init all the things."""
+        """Initialise all the things."""
         super().__init__(env)
         observation_space: gym.spaces.Dict = (
             self.observation_space  # type: ignore
@@ -174,7 +174,7 @@ def ast2vec_env_creator(env_config: dict) -> gym.Wrapper:
     256
 
     :param env_config: a custom environment config
-    :returns: a ``SaturationEnv``  with ast2vec encodings
+    :returns: a ``SaturationEnv``  with ast2vec encoding
     """
     env = gym.make("GymVampire-v0", **env_config)
     return AST2VecFeatures(env, 256)

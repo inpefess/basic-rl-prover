@@ -13,8 +13,8 @@
 #   limitations under the License.
 # noqa: D205, D400
 """
-Traning an RL Prover
-====================
+Training an RL Prover
+=====================
 """
 import os
 from typing import Any, Dict, List, Optional
@@ -34,7 +34,7 @@ def get_config(
     vampire_binary_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Get a pre-packed cofig.
+    Get a prepacked config.
 
     :param problem_list: a list of filenames of TPTP problems
     :param custom_config: additional parameters to change in the default config
@@ -95,7 +95,7 @@ def train_a_prover(
     >>> # to reproduce the results
     >>> from basic_rl_prover.constants import TRAIN_PROBLEMS
     >>> train_a_prover(TRAIN_PROBLEMS, None, None)  # doctest: +SKIP
-    >>> # test with Vampire backend
+    >>> # test with Vampire back-end
     >>> train_a_prover(
     ...     [problem_filename],
     ...     {"training_iteration": 1},
