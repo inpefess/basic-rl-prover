@@ -23,6 +23,8 @@ Package Documentation
    :members:
 .. automodule:: basic_rl_prover.custom_replay_buffer
    :members:
+.. automodule:: basic_rl_prover.ast2vec_environment
+   :members:
 .. automodule:: basic_rl_prover.train_prover
    :members:
 .. automodule:: basic_rl_prover.test_prover

@@ -15,17 +15,104 @@
 a wrapper over ``gym-saturation`` environment using ast2vec model to embed
 logical clauses
 """
-from functools import partial
 from itertools import chain
 from operator import itemgetter
-from typing import Tuple
+from typing import List, Tuple
 from urllib.request import Request, urlopen
 
 import gym
+import numpy as np
 import orjson
 from tptp_lark_parser.grammar import Clause, Function, Literal, Term
+from tptp_lark_parser.tptp_parser import TPTPParser
 
-from basic_rl_prover.custom_features import CustomFeatures
+
+def _pad_features(features: np.ndarray, features_num: int) -> np.ndarray:
+    if features_num >= features.shape[0]:
+        padded_features = np.pad(
+            features,
+            ((0, features_num - features.shape[0]), (0, 0)),
+        )
+    else:
+        padded_features = features[:features_num]
+    return padded_features
+
+
+class AST2VecFeatures(gym.Wrapper):
+    """a box wrapper for ``SaturationEnv``"""
+
+    _torch_serve_url = "http://127.0.0.1:8080/predictions/ast2vec"
+
+    def __init__(
+        self,
+        env,
+        features_num: int,
+    ):
+        super().__init__(env)
+        observation_space: gym.spaces.Dict = (
+            self.observation_space  # type: ignore
+        )
+        avail_actions = gym.spaces.Box(
+            low=-1,
+            high=1,
+            shape=(
+                observation_space["action_mask"].shape[0],
+                features_num,
+            ),
+        )
+        self.observation_space = gym.spaces.Dict(
+            {
+                "action_mask": observation_space["action_mask"],
+                "avail_actions": avail_actions,
+            }
+        )
+        self.encoded_state: List[np.ndarray] = []
+        self.tptp_parser = TPTPParser(extendable=True)
+
+    def reset(self, **kwargs):
+        observation = self.env.reset(**kwargs)
+        self.encoded_state = []
+        return self._transform(observation)
+
+    def _transform(self, observation):
+        new_clauses = [
+            clause["literals"]
+            for clause in map(
+                orjson.loads,
+                observation["real_obs"][len(self.encoded_state) :],
+            )
+        ]
+        new_embeddings = map(self.ast2vec_features, new_clauses)
+        self.encoded_state += list(new_embeddings)
+        padded_features = _pad_features(
+            features=np.array(self.encoded_state),
+            features_num=len(observation["action_mask"]),
+        )
+        return {
+            "action_mask": observation["action_mask"],
+            "avail_actions": padded_features,
+        }
+
+    def step(self, action):
+        observation, reward, done, info = self.env.step(action)
+        return self._transform(observation), reward, done, info
+
+    def ast2vec_features(self, literals_str: str) -> dict:
+        """
+        :param literals_str: literals to encode
+        :returns: observation dict with ast2vec encoding instead of clauses
+        """
+        clause = self.tptp_parser.parse(f"cnf(clause,plain, {literals_str}).")[
+            0
+        ]
+        req = Request(
+            self._torch_serve_url,
+            orjson.dumps({"data": _to_python(clause)}),
+            {"Content-Type": "application/json"},
+        )
+        with urlopen(req) as response:
+            clause_embedding = orjson.loads(response.read().decode("utf-8"))
+        return clause_embedding
 
 
 def _term_to_python(term: Term) -> Tuple[str, Tuple[str, ...]]:
@@ -67,31 +154,6 @@ def _to_python(clause: Clause) -> str:
 """
 
 
-def ast2vec_features(clause: Clause, torch_serve_url: str) -> dict:
-    """
-    >>> test_server = "http://127.0.0.1:8080/predictions/ast2vec"
-    >>> clause = Clause(literals=())
-    >>> embedding = ast2vec_features(clause, test_server)
-    >>> len(embedding)
-    256
-    >>> type(embedding[0])
-    <class 'float'>
-
-    :param clause: a clause to encode
-    :param torch_serve_url: a full HTTP URL where TorchServe serves ast2vec
-        encodings
-    :returns: observation dict with ast2vec encoding instead of clauses
-    """
-    req = Request(
-        torch_serve_url,
-        orjson.dumps({"data": _to_python(clause)}),
-        {"Content-Type": "application/json"},
-    )
-    with urlopen(req) as response:
-        clause_embedding = orjson.loads(response.read().decode("utf-8"))
-    return clause_embedding
-
-
 def ast2vec_env_creator(env_config: dict) -> gym.Wrapper:
     """
     >>> import os
@@ -112,11 +174,4 @@ def ast2vec_env_creator(env_config: dict) -> gym.Wrapper:
     :returns: a ``SaturationEnv``  with ast2vec encodings
     """
     env = gym.make("GymVampire-v0", **env_config)
-    return CustomFeatures(
-        env,
-        partial(
-            ast2vec_features,
-            torch_serve_url="http://127.0.0.1:8080/predictions/ast2vec",
-        ),  # type: ignore
-        256,
-    )
+    return AST2VecFeatures(env, 256)
