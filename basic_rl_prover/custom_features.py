@@ -71,13 +71,9 @@ class CustomFeatures(gym.Wrapper):
 
     def _transform(self, observation):
         new_clauses = [
-            orjson.loads(
-                orjson.dumps(
-                    self.tptp_parser.parse(
-                        "cnf(clause,plain," + clause["literals"] + ")."
-                    )[0]
-                )
-            )
+            self.tptp_parser.parse(
+                "cnf(clause,plain," + clause["literals"] + ")."
+            )[0]
             for clause in map(
                 orjson.loads,
                 observation["real_obs"][len(self.encoded_state) :],

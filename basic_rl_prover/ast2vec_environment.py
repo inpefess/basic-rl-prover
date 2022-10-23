@@ -23,28 +23,27 @@ from urllib.request import Request, urlopen
 
 import gym
 import orjson
+from tptp_lark_parser.grammar import Clause, Function, Literal, Term
 
 from basic_rl_prover.custom_features import CustomFeatures
 
 
-def _term_to_python(term: dict) -> Tuple[str, Tuple[str, ...]]:
-    if "arguments" in term:
-        func_name = f"f{term['index']}"
-        arguments = tuple(map(_term_to_python, term["arguments"]))
+def _term_to_python(term: Term) -> Tuple[str, Tuple[str, ...]]:
+    if isinstance(term, Function):
+        func_name = f"f{term.index}"
+        arguments = tuple(map(_term_to_python, term.arguments))
         return (
             f"{func_name}({','.join(map(itemgetter(0), arguments))})",
             tuple(chain(*map(itemgetter(1), arguments))),
         )
-    var_name = f"v{term['index']}"
+    var_name = f"v{term.index}"
     return var_name, (var_name,)
 
 
-def _literal_to_python(literal: dict) -> Tuple[str, Tuple[str, ...]]:
-    res = "~" if literal["negated"] else ""
-    arguments = tuple(
-        _term_to_python(term) for term in literal["atom"]["arguments"]
-    )
-    predicate_name = f"p{literal['atom']['index']}"
+def _literal_to_python(literal: Literal) -> Tuple[str, Tuple[str, ...]]:
+    res = "~" if literal.negated else ""
+    arguments = tuple(_term_to_python(term) for term in literal.atom.arguments)
+    predicate_name = f"p{literal.atom.index}"
     if predicate_name != "=":
         res += f"{predicate_name}({','.join(map(itemgetter(0), arguments))})"
     else:
@@ -52,35 +51,33 @@ def _literal_to_python(literal: dict) -> Tuple[str, Tuple[str, ...]]:
     return res, tuple(chain(*map(itemgetter(1), arguments)))
 
 
-def _to_python(clause: dict) -> str:
+def _to_python(clause: Clause) -> str:
     """
     see :ref:`TPTPParser <tptp-parser>` for the usage examples
 
     :returns: a Python code snippet representing the clause syntax only
     """
-    literals = tuple(map(_literal_to_python, clause["literals"]))
+    literals = tuple(map(_literal_to_python, clause.literals))
     signature = ", ".join(
         sorted(tuple(set(chain(*map(itemgetter(1), literals)))))
     )
     body = " | ".join(map(itemgetter(0), literals))
-    return f"""def x{clause['label']}({signature}):
+    return f"""def x{clause.label}({signature}):
     return {'false' if body == '' else body}
 """
 
 
-def ast2vec_features(clause: dict, torch_serve_url: str) -> dict:
+def ast2vec_features(clause: Clause, torch_serve_url: str) -> dict:
     """
-    >>> from gym_saturation.clause_space import ClauseSpace
     >>> test_server = "http://127.0.0.1:8080/predictions/ast2vec"
-    >>> import orjson
-    >>> clause = orjson.loads(ClauseSpace().sample()[0])
+    >>> clause = Clause(literals=())
     >>> embedding = ast2vec_features(clause, test_server)
     >>> len(embedding)
     256
     >>> type(embedding[0])
     <class 'float'>
 
-    :param observation: an observation dict from ``SaturationEnv``
+    :param clause: a clause to encode
     :param torch_serve_url: a full HTTP URL where TorchServe serves ast2vec
         encodings
     :returns: observation dict with ast2vec encoding instead of clauses
