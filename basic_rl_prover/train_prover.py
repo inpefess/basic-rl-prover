@@ -23,10 +23,8 @@ from ray import tune
 from ray.tune.registry import register_env
 
 from basic_rl_prover.action_selection_model import ActionSelectionModel
-
-# from basic_rl_prover.size_age_environment import size_age_env_creator
 from basic_rl_prover.ast2vec_environment import ast2vec_env_creator
-from basic_rl_prover.custom_dqn_trainer import CustomDQNTrainer
+from basic_rl_prover.custom_replay_buffer import CustomReplayBuffer
 
 
 def get_config(
@@ -61,10 +59,11 @@ def get_config(
         "lr": 0.01,
         "disable_env_checking": True,
         "replay_buffer_config": {
+            "type": CustomReplayBuffer,
             "capacity": 10000,
             "learning_starts": 1,
         },
-        "timesteps_per_iteration": 1,
+        "min_sample_timesteps_per_iteration": 1,
         "explore": False,
         "num_gpus": 1,
     }
@@ -90,22 +89,6 @@ def train_a_prover(
     ...         "resources", "TPTP-mock", "Problems", "TST", "TST003-1.p"
     ...     ))
     ... )
-    >>> # this takes several seconds
-    >>> train_a_prover(
-    ...     [problem_filename],
-    ...     {"training_iteration": 1},
-    ...     {
-    ...         "timesteps_per_iteration": 1,
-    ...         "train_batch_size": 1,
-    ...         "num_workers": 1,
-    ...     },
-    ... )
-    == Status ==
-    .../resources/TPTP-mock/Problems/TST/TST003-1.p 1 4 [0 1 2 3]
-    ...
-    >>> from basic_rl_prover.test_prover import upload_and_test_agent
-    >>> upload_and_test_agent([problem_filename])
-    TST003-1.p 1.0 2 [0, 1]
     >>> # to reproduce the results
     >>> from basic_rl_prover.constants import TRAIN_PROBLEMS
     >>> train_a_prover(TRAIN_PROBLEMS, None, None)  # doctest: +SKIP
@@ -123,6 +106,9 @@ def train_a_prover(
     == Status ==
     .../resources/TPTP-mock/Problems/TST/TST003-1.p 1 2 [0 1]
     ...
+    >>> from basic_rl_prover.test_prover import upload_and_test_agent
+    >>> upload_and_test_agent([problem_filename])
+    TST003-1.p 1.0 2 [0, 1]
 
     :param problem_list: a list of filenames of TPTP problems
     :param stop: `a stop condition <https://docs.ray.io/en/latest/tune/tutorials/tune-stopping.html#stopping-with-a-dictionary>`_
@@ -132,7 +118,7 @@ def train_a_prover(
     """
     ray.init(ignore_reinit_error=True)
     tune.run(
-        CustomDQNTrainer,
+        "DQN",
         name="basic_rl_prover",
         config=get_config(problem_list, custom_config, vampire_binary_path),
         local_dir=os.path.join(os.environ["WORK"], "ray_results"),

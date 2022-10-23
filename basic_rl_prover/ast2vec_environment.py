@@ -105,9 +105,6 @@ def ast2vec_env_creator(env_config: dict) -> gym.Wrapper:
     ...     "TPTP-mock", "Problems", "*", "*-*.p"
     ...     )
     ... ))
-    >>> env = ast2vec_env_creator({"problem_list": problem_list})
-    >>> env.observation_space["avail_actions"].shape[1]
-    256
     >>> env = ast2vec_env_creator(
     ...     {"problem_list": problem_list, "vampire_binary_path": "vampire"}
     ... )
@@ -115,13 +112,9 @@ def ast2vec_env_creator(env_config: dict) -> gym.Wrapper:
     256
 
     :param env_config: a custom environment config
-    :returns: a ``SaturationEnv`` or ``VampireEnv`` (if ``vampire_binary_path``
-        key is present in ``env_config``) with ast2vec encodings
+    :returns: a ``SaturationEnv``  with ast2vec encodings
     """
-    if "vampire_binary_path" in env_config:
-        env = gym.make("GymVampire-v0", **env_config)
-    else:
-        env = gym.make("GymSaturation-v0", **env_config)
+    env = gym.make("GymVampire-v0", **env_config)
     return CustomFeatures(
         env,
         partial(

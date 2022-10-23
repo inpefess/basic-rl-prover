@@ -19,16 +19,13 @@ Package Documentation
 
 .. automodule:: basic_rl_prover.constants
    :members:
+.. automodule:: basic_rl_prover.action_selection_model
+   :members:
 .. automodule:: basic_rl_prover.size_age_environment
    :members:
-.. automodule:: basic_rl_prover.custom_dqn_policy
-   :members:
-.. automodule:: basic_rl_prover.custom_dqn_trainer
-   :members:
-.. automodule:: basic_rl_prover.action_selection_model
+.. automodule:: basic_rl_prover.custom_replay_buffer
    :members:
 .. automodule:: basic_rl_prover.train_prover
    :members:
 .. automodule:: basic_rl_prover.test_prover
    :members:
-

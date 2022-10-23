@@ -19,18 +19,19 @@ import os
 from typing import List
 
 import gym
+from ray.rllib.algorithms.dqn.dqn import DQN
 from ray.tune.analysis import ExperimentAnalysis
 
 from basic_rl_prover.ast2vec_environment import ast2vec_env_creator
-from basic_rl_prover.custom_dqn_trainer import CustomDQNTrainer
 from basic_rl_prover.train_prover import get_config
 
 
-def get_agent(problem_list: List[str]) -> CustomDQNTrainer:
+def get_agent(problem_list: List[str], vampire_binary_path: str) -> DQN:
     """
     read an agent from the best checkpoint
 
     :param problem_list: a list of filenames of TPTP problems
+    :param vampire_binary_path: an absolute path to Vampire binary
     :returns: a trained agent
     """
     analysis = ExperimentAnalysis(
@@ -38,8 +39,12 @@ def get_agent(problem_list: List[str]) -> CustomDQNTrainer:
         default_metric="episodes_total",
         default_mode="max",
     )
-    agent = CustomDQNTrainer(
-        config=get_config(problem_list, {"num_workers": 0, "num_gpus": 0})
+    agent = DQN(
+        config=get_config(
+            problem_list,
+            {"num_workers": 0, "num_gpus": 0},
+            vampire_binary_path=vampire_binary_path,
+        )
     )
     agent.restore(analysis.best_checkpoint)
     return agent
@@ -56,7 +61,7 @@ def upload_and_test_agent(problem_list: List[str]) -> None:
     :param problem_list: a list of filenames of TPTP problems
     :returns:
     """
-    agent = get_agent(problem_list)
+    agent = get_agent(problem_list, "vampire")
     for filename in problem_list:
         env = gym.wrappers.TimeLimit(
             ast2vec_env_creator(

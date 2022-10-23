@@ -19,6 +19,7 @@ from typing import Callable, List
 import gym
 import numpy as np
 import orjson
+from tptp_lark_parser.tptp_parser import TPTPParser
 
 
 def _pad_features(features: np.ndarray, features_num: int) -> np.ndarray:
@@ -42,7 +43,9 @@ class CustomFeatures(gym.Wrapper):
         features_num: int,
     ):
         super().__init__(env)
-        observation_space = self.observation_space  # type: ignore
+        observation_space: gym.spaces.Dict = (
+            self.observation_space  # type: ignore
+        )
         avail_actions = gym.spaces.Box(
             low=-1,
             high=1,
@@ -59,6 +62,7 @@ class CustomFeatures(gym.Wrapper):
             }
         )
         self.encoded_state: List[np.ndarray] = []
+        self.tptp_parser = TPTPParser(extendable=True)
 
     def reset(self, **kwargs):
         observation = self.env.reset(**kwargs)
@@ -66,12 +70,19 @@ class CustomFeatures(gym.Wrapper):
         return self._transform(observation)
 
     def _transform(self, observation):
-        new_clauses = list(
-            map(
+        new_clauses = [
+            orjson.loads(
+                orjson.dumps(
+                    self.tptp_parser.parse(
+                        "cnf(clause,plain," + clause["literals"] + ")."
+                    )[0]
+                )
+            )
+            for clause in map(
                 orjson.loads,
                 observation["real_obs"][len(self.encoded_state) :],
             )
-        )
+        ]
         new_embeddings = map(self.transforming_function, new_clauses)
         self.encoded_state += list(new_embeddings)
         padded_features = _pad_features(

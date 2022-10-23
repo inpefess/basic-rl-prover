@@ -14,7 +14,6 @@
 """ a customisation of a ``gym-saturation`` environment """
 import gym
 import numpy as np
-from gym_saturation.logic_ops.utils import clause_length
 
 from basic_rl_prover.custom_features import CustomFeatures
 
@@ -31,7 +30,8 @@ def size_age_features(clause: dict) -> np.ndarray:
     :returns: age and size of the clause
     """
     return 1 / (
-        1 + np.array([clause_length(clause), clause["birth_step"]], np.float32)
+        1
+        + np.array([len(clause["literals"]), clause["birth_step"]], np.float32)
     )
 
 
