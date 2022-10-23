@@ -63,7 +63,7 @@ def get_config(
             "capacity": 10000,
             "learning_starts": 1,
         },
-        "timesteps_per_iteration": 1,
+        "min_sample_timesteps_per_iteration": 1,
         "explore": False,
         "num_gpus": 1,
     }
