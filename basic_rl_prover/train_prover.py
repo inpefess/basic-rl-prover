@@ -11,9 +11,10 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+# noqa: D205, D400
 """
-Traning an RL Prover
-====================
+Training an RL Prover
+=====================
 """
 import os
 from typing import Any, Dict, List, Optional
@@ -33,6 +34,8 @@ def get_config(
     vampire_binary_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
+    Get a prepacked config.
+
     :param problem_list: a list of filenames of TPTP problems
     :param custom_config: additional parameters to change in the default config
     :param vampire_binary_path: a full path to Vampire binary
@@ -79,7 +82,7 @@ def train_a_prover(
     vampire_binary_path: Optional[str] = None,
 ) -> None:
     """
-    run ray pipeline
+    Run Ray pipeline.
 
     >>> os.environ["WORK"] = getfixture("tmp_path").as_posix() # noqa: F821
     >>> from importlib.resources import files
@@ -92,7 +95,7 @@ def train_a_prover(
     >>> # to reproduce the results
     >>> from basic_rl_prover.constants import TRAIN_PROBLEMS
     >>> train_a_prover(TRAIN_PROBLEMS, None, None)  # doctest: +SKIP
-    >>> # test with Vampire backend
+    >>> # test with Vampire back-end
     >>> train_a_prover(
     ...     [problem_filename],
     ...     {"training_iteration": 1},

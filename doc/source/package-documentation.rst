@@ -21,9 +21,9 @@ Package Documentation
    :members:
 .. automodule:: basic_rl_prover.action_selection_model
    :members:
-.. automodule:: basic_rl_prover.size_age_environment
-   :members:
 .. automodule:: basic_rl_prover.custom_replay_buffer
+   :members:
+.. automodule:: basic_rl_prover.ast2vec_environment
    :members:
 .. automodule:: basic_rl_prover.train_prover
    :members:
