@@ -21,12 +21,13 @@ from typing import Any, Dict, List, Optional
 
 import ray
 from ray.air.config import CheckpointConfig, RunConfig
-from ray.rllib.algorithms.dqn import DQN, DQNConfig
+from ray.rllib.algorithms.dqn import DQNConfig
 from ray.tune import TuneConfig, Tuner
 from ray.tune.registry import register_env
 
 from basic_rl_prover.action_selection_model import ActionSelectionModel
 from basic_rl_prover.ast2vec_environment import ast2vec_env_creator
+from basic_rl_prover.custom_dqn import CustomDQN
 from basic_rl_prover.custom_replay_buffer import CustomReplayBuffer
 
 
@@ -137,7 +138,7 @@ def train_a_prover(
     )
     tune_config = TuneConfig(time_budget_s=3600)
     Tuner(
-        trainable=DQN,
+        trainable=CustomDQN,
         param_space=full_config,
         run_config=run_config,
         tune_config=tune_config,
