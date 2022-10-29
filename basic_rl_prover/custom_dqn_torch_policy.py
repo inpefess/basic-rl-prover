@@ -45,7 +45,11 @@ def spread_reward(sample_batch: SampleBatch) -> None:
         for info in sample_batch[SampleBatch.INFOS]
         if POSITIVE_ACTIONS in info
     ][0]
-    proof_length = len(positive_actions)
+    proof_length = len(
+        set(positive_actions).intersection(
+            set(sample_batch[SampleBatch.ACTIONS])
+        )
+    )
     new_rewards = sample_batch[SampleBatch.REWARDS].copy()
     for i, action in enumerate(sample_batch[SampleBatch.ACTIONS]):
         if action in positive_actions:
@@ -59,7 +63,17 @@ def spread_reward(sample_batch: SampleBatch) -> None:
 
 # pylint: disable=abstract-method
 class CustomDQNTorchPolicy(DQNTorchPolicy):
-    """Custom policy based on standard DQN one."""
+    """
+    Custom policy based on standard DQN one.
+
+    >>> from gym.spaces import Discrete
+    >>> dummy_policy = CustomDQNTorchPolicy(Discrete(2), Discrete(2), {})
+    >>> sample_batch = getfixture("sample_batch") # noqa: F821
+    >>> dummy_policy.postprocess_trajectory(sample_batch[2:])[
+    ...     SampleBatch.REWARDS
+    ... ]
+    array([0.5, 0.5])
+    """
 
     def postprocess_trajectory(
         self,

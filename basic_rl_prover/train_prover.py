@@ -99,10 +99,6 @@ def train_a_prover(
     ...         "resources", "TPTP-mock", "Problems", "TST", "TST003-1.p"
     ...     ))
     ... )
-    >>> # to reproduce the results
-    >>> from basic_rl_prover.constants import TRAIN_PROBLEMS
-    >>> train_a_prover(TRAIN_PROBLEMS, None, None)  # doctest: +SKIP
-    >>> # test with Vampire back-end
     >>> train_a_prover(
     ...     [problem_filename],
     ...     {"training_iteration": 1},
@@ -114,7 +110,7 @@ def train_a_prover(
     ...     "vampire",
     ... )
     == Status ==
-    .../resources/TPTP-mock/Problems/TST/TST003-1.p 1 2 [0 1]
+    .../resources/TPTP-mock/Problems/TST/TST003-1.p 1.0 2 [0 1]
     ...
     >>> from basic_rl_prover.test_prover import upload_and_test_agent
     >>> upload_and_test_agent([problem_filename])
