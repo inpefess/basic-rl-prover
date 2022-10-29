@@ -64,7 +64,6 @@ def get_config(
         "replay_buffer_config": {
             "type": CustomReplayBuffer,
             "capacity": 10000,
-            "learning_starts": 1,
         },
         "min_sample_timesteps_per_iteration": 1,
         "explore": False,
