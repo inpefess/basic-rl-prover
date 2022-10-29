@@ -22,6 +22,7 @@ Custom Replay Buffer
 """
 import logging
 import sys
+from typing import Optional
 
 from gym_saturation.envs.saturation_env import (
     POSITIVE_ACTIONS,
@@ -133,3 +134,8 @@ class CustomReplayBuffer(ReplayBuffer):
                     timesteps = episode.timeslices(1)
                     for timestep in timesteps:
                         self._add_single_batch(timestep, **kwargs)
+
+    def sample(self, num_items: int, **kwargs) -> Optional[SampleBatchType]:
+        if len(self) == 0:
+            return SampleBatch({})
+        return super().sample(num_items, **kwargs)
