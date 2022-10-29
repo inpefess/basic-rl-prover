@@ -20,7 +20,9 @@ import os
 from typing import Any, Dict, List, Optional
 
 import ray
-from ray import tune
+from ray.air.config import CheckpointConfig, RunConfig
+from ray.rllib.algorithms.dqn import DQN, DQNConfig
+from ray.tune import TuneConfig, Tuner
 from ray.tune.registry import register_env
 
 from basic_rl_prover.action_selection_model import ActionSelectionModel
@@ -28,16 +30,22 @@ from basic_rl_prover.ast2vec_environment import ast2vec_env_creator
 from basic_rl_prover.custom_replay_buffer import CustomReplayBuffer
 
 
+def _set_other_parameters(config: DQNConfig) -> None:
+    config.framework("torch")
+    config.resources(num_gpus=1)
+    config.exploration(explore=False)
+    config.debugging(seed=777)
+    config.reporting(min_sample_timesteps_per_iteration=1)
+
+
 def get_config(
     problem_list: List[str],
-    custom_env_config: Optional[Dict[str, int]],
     vampire_binary_path: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> DQNConfig:
     """
     Get a prepacked config.
 
     :param problem_list: a list of filenames of TPTP problems
-    :param custom_config: additional parameters to change in the default config
     :param vampire_binary_path: a full path to Vampire binary
     :returns: a config
     """
@@ -45,39 +53,38 @@ def get_config(
     env_config = {"problem_list": problem_list, "max_clauses": 500}
     if vampire_binary_path is not None:
         env_config["vampire_binary_path"] = vampire_binary_path
-    basic_config = {
-        "seed": 777,
-        "env": "ast2vec_saturation",
-        "env_config": env_config,
-        "framework": "torch",
-        "model": {
+    config = DQNConfig()
+    config.training(
+        model={
             "custom_model": ActionSelectionModel,
             "custom_model_config": {"embedding_size": 256},
         },
-        "batch_mode": "complete_episodes",
-        "horizon": 100,
-        "num_workers": 10,
-        "hiddens": [],
-        "dueling": False,
-        "lr": 0.01,
-        "disable_env_checking": True,
-        "replay_buffer_config": {
+        hiddens=[],
+        dueling=False,
+        replay_buffer_config={
             "type": CustomReplayBuffer,
             "capacity": 10000,
         },
-        "min_sample_timesteps_per_iteration": 1,
-        "explore": False,
-        "num_gpus": 1,
-    }
-    if custom_env_config is not None:
-        basic_config.update(custom_env_config)
-    return basic_config
+        lr=0.01,
+    )
+    config.environment(
+        env="ast2vec_saturation",
+        env_config=env_config,
+        disable_env_checking=True,
+    )
+    config.rollouts(
+        batch_mode="complete_episodes",
+        horizon=100,
+        num_rollout_workers=2,
+    )
+    _set_other_parameters(config)
+    return config
 
 
 def train_a_prover(
     problem_list: List[str],
     stop: Optional[Dict[str, int]] = None,
-    custom_config: Optional[Dict[str, int]] = None,
+    custom_config: Optional[Dict[str, Any]] = None,
     vampire_binary_path: Optional[str] = None,
 ) -> None:
     """
@@ -119,13 +126,20 @@ def train_a_prover(
     :returns:
     """
     ray.init(ignore_reinit_error=True)
-    tune.run(
-        "DQN",
+    full_config = dict(get_config(problem_list, vampire_binary_path).to_dict())
+    if custom_config is not None:
+        full_config.update(custom_config)
+    run_config = RunConfig(
         name="basic_rl_prover",
-        config=get_config(problem_list, custom_config, vampire_binary_path),
         local_dir=os.path.join(os.environ["WORK"], "ray_results"),
-        checkpoint_freq=1,
-        time_budget_s=3600,
+        checkpoint_config=CheckpointConfig(checkpoint_frequency=1),
         stop=stop,
     )
+    tune_config = TuneConfig(time_budget_s=3600)
+    Tuner(
+        trainable=DQN,
+        param_space=full_config,
+        run_config=run_config,
+        tune_config=tune_config,
+    ).fit()
     ray.shutdown()
