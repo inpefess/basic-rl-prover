@@ -20,14 +20,14 @@ import os
 from typing import List
 
 import gym
-from ray.rllib.algorithms.dqn.dqn import DQN
 from ray.tune.analysis import ExperimentAnalysis
 
 from basic_rl_prover.ast2vec_environment import ast2vec_env_creator
+from basic_rl_prover.custom_dqn import CustomDQN
 from basic_rl_prover.train_prover import get_config
 
 
-def get_agent(problem_list: List[str], vampire_binary_path: str) -> DQN:
+def get_agent(problem_list: List[str], vampire_binary_path: str) -> CustomDQN:
     """
     Read an agent from the best checkpoint.
 
@@ -40,13 +40,10 @@ def get_agent(problem_list: List[str], vampire_binary_path: str) -> DQN:
         default_metric="episodes_total",
         default_mode="max",
     )
-    agent = DQN(
-        config=get_config(
-            problem_list,
-            {"num_workers": 0, "num_gpus": 0},
-            vampire_binary_path=vampire_binary_path,
-        )
-    )
+    dqn_config = get_config(problem_list, vampire_binary_path)
+    dqn_config.rollouts(num_rollout_workers=0)
+    dqn_config.resources(num_gpus=0)
+    agent = CustomDQN(config=dqn_config)
     agent.restore(analysis.best_checkpoint)
     return agent
 

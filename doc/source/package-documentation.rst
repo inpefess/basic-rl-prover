@@ -23,6 +23,10 @@ Package Documentation
    :members:
 .. automodule:: basic_rl_prover.custom_replay_buffer
    :members:
+.. automodule:: basic_rl_prover.custom_dqn_torch_policy
+   :members:
+.. automodule:: basic_rl_prover.custom_dqn
+   :members:
 .. automodule:: basic_rl_prover.ast2vec_environment
    :members:
 .. automodule:: basic_rl_prover.train_prover
