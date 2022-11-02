@@ -99,6 +99,7 @@ class AST2VecFeatures(gym.Wrapper):
     def step(self, action):
         """Apply the agent's action."""
         observation, reward, done, info = self.env.step(action)
+        info["real_obs"] = observation["real_obs"]
         return self._transform(observation), reward, done, info
 
     def ast2vec_features(self, literals_str: str) -> dict:

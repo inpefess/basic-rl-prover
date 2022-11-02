@@ -22,10 +22,9 @@ Policy with trajectory post-processing
 """
 from typing import Dict, Optional, Tuple
 
-from gym_saturation.envs.saturation_env import (
-    POSITIVE_ACTIONS,
-    STATE_DIFF_UPDATED,
-)
+import orjson
+from gym_saturation.envs.saturation_env import STATE_DIFF_UPDATED
+from gym_saturation.utils import Clause, get_positive_actions
 from ray.rllib.algorithms.dqn import DQNTorchPolicy
 from ray.rllib.evaluation import Episode
 from ray.rllib.policy import Policy
@@ -40,11 +39,14 @@ def spread_reward(sample_batch: SampleBatch) -> None:
     :param sample_batch: batch is modified by this function!
     :returns:
     """
-    positive_actions = [
-        info[POSITIVE_ACTIONS]
-        for info in sample_batch[SampleBatch.INFOS]
-        if POSITIVE_ACTIONS in info
-    ][0]
+    clauses_dict = {
+        clause.label: clause
+        for clause in [
+            Clause(**orjson.loads(clause_dump))
+            for clause_dump in sample_batch[SampleBatch.INFOS][-1]["real_obs"]
+        ]
+    }
+    positive_actions = get_positive_actions(clauses_dict)
     proof_length = len(
         set(positive_actions).intersection(
             set(sample_batch[SampleBatch.ACTIONS])
@@ -57,8 +59,6 @@ def spread_reward(sample_batch: SampleBatch) -> None:
     sample_batch[SampleBatch.REWARDS] = new_rewards
     for info in sample_batch[SampleBatch.INFOS]:
         info.pop(STATE_DIFF_UPDATED)
-        if POSITIVE_ACTIONS in info:
-            info.pop(POSITIVE_ACTIONS)
 
 
 # pylint: disable=abstract-method

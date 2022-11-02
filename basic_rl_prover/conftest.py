@@ -18,7 +18,6 @@ from threading import Thread
 
 import numpy as np
 from gym_saturation.envs.saturation_env import (
-    POSITIVE_ACTIONS,
     PROBLEM_FILENAME,
     STATE_DIFF_UPDATED,
 )
@@ -51,46 +50,43 @@ def http_server():
 @fixture()
 def sample_batch():
     """Return a sample batch similar to one returned by ``gym_saturation``."""
-    clause1 = {
-        "class": "Clause",
-        "processed": True,
-        "literals": [],
-        "label": "this_is_a_test_case",
-        "birth_step": 1,
-        "inference_parents": ["initial"],
-        "inference_rule": "success",
-    }
-    clause0 = {
-        "class": "Clause",
-        "processed": True,
-        "literals": [
-            {
-                "class": "Literal",
-                "negated": False,
-                "atom": {
-                    "class": "Predicate",
-                    "name": "this_is_a_test_case",
-                    "arguments": [],
-                },
-            }
-        ],
-        "label": "initial",
-        "birth_step": 0,
-        "inference_parents": None,
-        "inference_rule": None,
-    }
+    clause1 = b"""{
+"literals":"$false",
+"label":"false",
+"role":"lemma",
+"inference_parents":["initial"],
+"inference_rule":"dummy",
+"processed":true,
+"birth_step":1}"""
+    clause0 = b"""{
+"literals":"p(X)",
+"label":"initial",
+"role":"lemma",
+"inference_parents":null,
+"inference_rule":null,
+"processed":true,
+"birth_step":0}"""
     return SampleBatch(
         infos=[
-            {STATE_DIFF_UPDATED: {0: clause0}, PROBLEM_FILENAME: "test"},
             {
-                STATE_DIFF_UPDATED: {1: clause1},
+                STATE_DIFF_UPDATED: {0: clause0},
                 PROBLEM_FILENAME: "test",
+                "real_obs": (clause0,),
             },
-            {STATE_DIFF_UPDATED: {0: clause0}, PROBLEM_FILENAME: "test"},
             {
                 STATE_DIFF_UPDATED: {1: clause1},
-                POSITIVE_ACTIONS: (0, 1),
                 PROBLEM_FILENAME: "test",
+                "real_obs": (clause0, clause1),
+            },
+            {
+                STATE_DIFF_UPDATED: {0: clause0},
+                PROBLEM_FILENAME: "test",
+                "real_obs": (clause0,),
+            },
+            {
+                STATE_DIFF_UPDATED: {1: clause1},
+                PROBLEM_FILENAME: "test",
+                "real_obs": (clause0, clause1),
             },
         ],
         rewards=np.array([0.0, 0.0, 0.0, 1.0]),
