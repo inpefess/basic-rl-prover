@@ -22,9 +22,8 @@ Policy with trajectory post-processing
 """
 from typing import Dict, Optional, Tuple
 
-import orjson
 from gym_saturation.envs.saturation_env import STATE_DIFF_UPDATED
-from gym_saturation.utils import Clause, get_positive_actions
+from gym_saturation.utils import get_positive_actions
 from ray.rllib.algorithms.dqn import DQNTorchPolicy
 from ray.rllib.evaluation import Episode
 from ray.rllib.policy import Policy
@@ -39,13 +38,7 @@ def spread_reward(sample_batch: SampleBatch) -> None:
     :param sample_batch: batch is modified by this function!
     :returns:
     """
-    clauses_dict = {
-        clause.label: clause
-        for clause in [
-            Clause(**orjson.loads(clause_dump))
-            for clause_dump in sample_batch[SampleBatch.INFOS][-1]["real_obs"]
-        ]
-    }
+    clauses_dict = sample_batch[SampleBatch.INFOS][-1]["real_obs"]
     positive_actions = get_positive_actions(clauses_dict)
     proof_length = len(
         set(positive_actions).intersection(

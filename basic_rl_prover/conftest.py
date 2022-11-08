@@ -21,6 +21,7 @@ from gym_saturation.envs.saturation_env import (
     PROBLEM_FILENAME,
     STATE_DIFF_UPDATED,
 )
+from gym_saturation.utils import Clause
 from pytest import fixture
 from ray.rllib.policy.sample_batch import SampleBatch
 
@@ -50,43 +51,45 @@ def http_server():
 @fixture()
 def sample_batch():
     """Return a sample batch similar to one returned by ``gym_saturation``."""
-    clause1 = b"""{
-"literals":"$false",
-"label":"false",
-"role":"lemma",
-"inference_parents":["initial"],
-"inference_rule":"dummy",
-"processed":true,
-"birth_step":1}"""
-    clause0 = b"""{
-"literals":"p(X)",
-"label":"initial",
-"role":"lemma",
-"inference_parents":null,
-"inference_rule":null,
-"processed":true,
-"birth_step":0}"""
+    clause1 = Clause(
+        literals="$false",
+        label="false",
+        role="lemma",
+        inference_parents=["initial"],
+        inference_rule="dummy",
+        processed=True,
+        birth_step=1,
+    )
+    clause0 = Clause(
+        literals="p(X)",
+        label="initial",
+        role="lemma",
+        inference_parents=None,
+        inference_rule=None,
+        processed=True,
+        birth_step=0,
+    )
     return SampleBatch(
         infos=[
             {
                 STATE_DIFF_UPDATED: {0: clause0},
                 PROBLEM_FILENAME: "test",
-                "real_obs": (clause0,),
+                "real_obs": {"initial": clause0},
             },
             {
                 STATE_DIFF_UPDATED: {1: clause1},
                 PROBLEM_FILENAME: "test",
-                "real_obs": (clause0, clause1),
+                "real_obs": {"initial": clause0, "false": clause1},
             },
             {
                 STATE_DIFF_UPDATED: {0: clause0},
                 PROBLEM_FILENAME: "test",
-                "real_obs": (clause0,),
+                "real_obs": {"initial": clause0},
             },
             {
                 STATE_DIFF_UPDATED: {1: clause1},
                 PROBLEM_FILENAME: "test",
-                "real_obs": (clause0, clause1),
+                "real_obs": {"initial": clause0, "false": clause1},
             },
         ],
         rewards=np.array([0.0, 0.0, 0.0, 1.0]),

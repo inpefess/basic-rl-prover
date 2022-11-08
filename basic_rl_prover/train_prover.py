@@ -39,21 +39,15 @@ def _set_other_parameters(config: DQNConfig) -> None:
     config.reporting(min_sample_timesteps_per_iteration=1)
 
 
-def get_config(
-    problem_list: List[str],
-    vampire_binary_path: Optional[str] = None,
-) -> DQNConfig:
+def get_config(problem_list: List[str]) -> DQNConfig:
     """
     Get a prepacked config.
 
     :param problem_list: a list of filenames of TPTP problems
-    :param vampire_binary_path: a full path to Vampire binary
     :returns: a config
     """
     register_env("ast2vec_saturation", ast2vec_env_creator)
     env_config = {"problem_list": problem_list, "max_clauses": 500}
-    if vampire_binary_path is not None:
-        env_config["vampire_binary_path"] = vampire_binary_path
     config = DQNConfig()
     config.training(
         model={
@@ -86,7 +80,6 @@ def train_a_prover(
     problem_list: List[str],
     stop: Optional[Dict[str, int]] = None,
     custom_config: Optional[Dict[str, Any]] = None,
-    vampire_binary_path: Optional[str] = None,
 ) -> None:
     """
     Run Ray pipeline.
@@ -103,11 +96,10 @@ def train_a_prover(
     ...     [problem_filename],
     ...     {"training_iteration": 1},
     ...     {
-    ...         "timesteps_per_iteration": 1,
+    ...         "min_sample_timesteps_per_iteration": 1,
     ...         "train_batch_size": 1,
     ...         "num_workers": 1,
-    ...     },
-    ...     "vampire",
+    ...     }
     ... )
     == Status ==
     .../resources/TPTP-mock/Problems/TST/TST003-1.p 1.0 2 [0 1]
@@ -119,11 +111,10 @@ def train_a_prover(
     :param problem_list: a list of filenames of TPTP problems
     :param stop: `a stop condition <https://docs.ray.io/en/latest/tune/tutorials/tune-stopping.html#stopping-with-a-dictionary>`_
     :param custom_config: additional parameters to change in the default config
-    :param vampire_binary_path: a full path to Vampire binary
     :returns:
     """
     ray.init(ignore_reinit_error=True)
-    full_config = dict(get_config(problem_list, vampire_binary_path).to_dict())
+    full_config = dict(get_config(problem_list).to_dict())
     if custom_config is not None:
         full_config.update(custom_config)
     run_config = RunConfig(

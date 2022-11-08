@@ -79,11 +79,10 @@ class AST2VecFeatures(gym.Wrapper):
 
     def _transform(self, observation):
         new_clauses = [
-            clause["literals"]
-            for clause in map(
-                orjson.loads,
-                observation["real_obs"][len(self.encoded_state) :],
-            )
+            clause.literals
+            for clause in list(observation["real_obs"].values())[
+                len(self.encoded_state) :
+            ]
         ]
         new_embeddings = map(self.ast2vec_features, new_clauses)
         self.encoded_state += list(new_embeddings)
@@ -168,14 +167,12 @@ def ast2vec_env_creator(env_config: dict) -> gym.Wrapper:
     ...     "TPTP-mock", "Problems", "*", "*-*.p"
     ...     )
     ... ))
-    >>> env = ast2vec_env_creator(
-    ...     {"problem_list": problem_list, "vampire_binary_path": "vampire"}
-    ... )
+    >>> env = ast2vec_env_creator({"problem_list": problem_list})
     >>> env.observation_space["avail_actions"].shape[1]
     256
 
     :param env_config: a custom environment config
     :returns: a ``SaturationEnv``  with ast2vec encoding
     """
-    env = gym.make("GymVampire-v0", **env_config)
+    env = gym.make("Vampire-v0", **env_config)
     return AST2VecFeatures(env, 256)
