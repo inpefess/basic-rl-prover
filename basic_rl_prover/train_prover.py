@@ -61,6 +61,7 @@ def get_config(problem_list: List[str]) -> DQNConfig:
             "capacity": 10000,
         },
         lr=0.01,
+        num_steps_sampled_before_learning_starts=1,
     )
     config.environment(
         env="ast2vec_saturation",
@@ -69,7 +70,7 @@ def get_config(problem_list: List[str]) -> DQNConfig:
     )
     config.rollouts(
         batch_mode="complete_episodes",
-        horizon=100,
+        horizon=20,
         num_rollout_workers=2,
     )
     _set_other_parameters(config)
@@ -102,7 +103,7 @@ def train_a_prover(
     ...     }
     ... )
     == Status ==
-    .../resources/TPTP-mock/Problems/TST/TST003-1.p 1.0 2 [0 1]
+    ... TST003-1.p 1.0 2 [0 1]
     ...
     >>> from basic_rl_prover.test_prover import upload_and_test_agent
     >>> upload_and_test_agent([problem_filename])
