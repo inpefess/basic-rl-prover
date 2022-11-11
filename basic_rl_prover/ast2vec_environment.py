@@ -103,7 +103,14 @@ class AST2VecFeatures(gym.Wrapper):
         :param literals_str: literals to encode
         :returns: observation dict with ast2vec encoding instead of clauses
         """
-        prepared_literals = literals_str.replace("$false", "False")
+        prepared_literals = (
+            literals_str.replace("==", "^^")
+            .replace("!=", "^^^")
+            .replace("=", "==")
+            .replace("^^^", "!=")
+            .replace("^^", "==")
+            .replace("$false", "False")
+        )
         req = Request(
             self._torch_serve_url,
             f'{{"data": "{prepared_literals}"}}'.encode("utf8"),
