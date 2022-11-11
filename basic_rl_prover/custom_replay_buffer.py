@@ -85,12 +85,12 @@ class CustomReplayBuffer(ReplayBuffer):
             episodes = batch.split_by_episode()
             for episode in episodes:
                 logger.info(
-                    "EPISODE %d: %s %.1f %d %s",
+                    "EPISODE %d: %s %d %d %s",
                     episode[SampleBatch.EPS_ID][0],
                     os.path.basename(
                         episode[SampleBatch.INFOS][0][PROBLEM_FILENAME]
                     ),
-                    episode[SampleBatch.REWARDS].sum(),
+                    (episode[SampleBatch.REWARDS] > 0).sum(),
                     episode.count,
                     episode[SampleBatch.ACTIONS],
                 )

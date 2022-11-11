@@ -93,6 +93,9 @@ def train_a_prover(
     ...         "resources", "TPTP-mock", "Problems", "TST", "TST003-1.p"
     ...     ))
     ... )
+    >>> # the shortest path to the proof here is [0, 1]
+    >>> # 2 is added after 0 because of exploration
+    >>> # and all three actions contribute to the proof
     >>> train_a_prover(
     ...     [problem_filename],
     ...     {"training_iteration": 1},
@@ -103,11 +106,13 @@ def train_a_prover(
     ...     }
     ... )
     == Status ==
-    ... TST003-1.p 1.0 2 [0 1]
+    ... TST003-1.p 3 3 [0 2 1]
     ...
     >>> from basic_rl_prover.test_prover import upload_and_test_agent
+    >>> # the actual proof consists of five steps though: 0, 1, 2, 0+1,
+    >>> # and final $false. They are selected automatically by Vampire
     >>> upload_and_test_agent([problem_filename])
-    TST003-1.p 1.0 2 [0, 1]
+    TST003-1.p 1.0 5 2 [0, 1]
 
     :param problem_list: a list of filenames of TPTP problems
     :param stop: `a stop condition <https://docs.ray.io/en/latest/tune/tutorials/tune-stopping.html#stopping-with-a-dictionary>`_

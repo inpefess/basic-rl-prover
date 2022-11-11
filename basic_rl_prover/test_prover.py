@@ -20,6 +20,7 @@ import os
 from typing import List
 
 import gym
+from gym_saturation.utils import get_positive_actions
 from ray.tune.analysis import ExperimentAnalysis
 
 from basic_rl_prover.ast2vec_environment import ast2vec_env_creator
@@ -70,10 +71,13 @@ def upload_and_test_agent(problem_list: List[str]) -> None:
         while not done:
             action = agent.compute_single_action(obs, explore=False)
             actions.append(action)
-            obs, reward, done, _ = env.step(action)
+            obs, reward, done, info = env.step(action)
         print(
             os.path.basename(filename),
             reward,
+            len(get_positive_actions(info["real_obs"]))
+            if reward == 1.0
+            else 0,
             len(actions),
             actions,
             flush=True,
