@@ -34,7 +34,7 @@ from basic_rl_prover.custom_replay_buffer import CustomReplayBuffer
 def _set_other_parameters(config: DQNConfig) -> None:
     config.framework("torch")
     config.resources(num_gpus=1)
-    config.exploration(explore=False)
+    config.exploration(explore=True)
     config.debugging(seed=777)
     config.reporting(min_sample_timesteps_per_iteration=1)
 
