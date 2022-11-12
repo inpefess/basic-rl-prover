@@ -35,7 +35,7 @@ def _set_other_parameters(config: DQNConfig) -> None:
     config.framework("torch")
     config.resources(num_gpus=1)
     config.exploration(explore=True)
-    config.debugging(seed=777)
+    config.debugging(seed=17)
     config.reporting(min_sample_timesteps_per_iteration=1)
 
 
@@ -129,7 +129,7 @@ def train_a_prover(
         checkpoint_config=CheckpointConfig(checkpoint_frequency=1),
         stop=stop,
     )
-    tune_config = TuneConfig(time_budget_s=3600)
+    tune_config = TuneConfig(time_budget_s=900)
     Tuner(
         trainable=CustomDQN,
         param_space=full_config,
