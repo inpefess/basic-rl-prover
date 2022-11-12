@@ -21,8 +21,9 @@ Custom Replay Buffer
 =====================
 """
 import logging
+import os
 import sys
-from typing import Optional
+from typing import Optional, Set, Union
 
 from gym_saturation.envs.saturation_env import PROBLEM_FILENAME
 from ray.rllib.policy.sample_batch import SampleBatch
@@ -46,15 +47,33 @@ class CustomReplayBuffer(ReplayBuffer):
     >>> sample_batch = getfixture("sample_batch") # noqa: F821
     >>> replay_buffer.add(sample_batch)
     >>> replay_buffer.stats()["num_entries"]
-    2
+    4
     >>> sample = replay_buffer.sample(1000)
     >>> max(sample["rewards"])
     1.0
     >>> set(sample["actions"])
     {0, 1}
     >>> set(sample[SampleBatch.EPS_ID])
-    {1}
+    {0, 1}
     """
+
+    def __init__(
+        self,
+        capacity: int = 10000,
+        storage_unit: Union[str, StorageUnit] = "timesteps",
+        **kwargs,
+    ):
+        """Initialise a CustomReplayBuffer instance.
+
+        :param capacity: Max number of timesteps to store in this FIFO
+            buffer. After reaching this number, older samples will be
+            dropped to make space for new ones.
+        :param storage_unit: If not a StorageUnit, either 'timesteps',
+            'sequences' or 'episodes'. Specifies how experiences are stored.
+        :param kwargs: Forward compatibility kwargs.
+        """
+        super().__init__(capacity, storage_unit, **kwargs)
+        self._problems_solved: Set[str] = set()
 
     @override(ReplayBuffer)
     def add(self, batch: SampleBatchType, **kwargs) -> None:
@@ -66,17 +85,21 @@ class CustomReplayBuffer(ReplayBuffer):
             episodes = batch.split_by_episode()
             for episode in episodes:
                 logger.info(
-                    "EPISODE %d: %s %.1f %d %s",
+                    "EPISODE %d: %s %d %d %s",
                     episode[SampleBatch.EPS_ID][0],
-                    episode[SampleBatch.INFOS][0][PROBLEM_FILENAME],
-                    episode[SampleBatch.REWARDS].sum(),
+                    os.path.basename(
+                        episode[SampleBatch.INFOS][0][PROBLEM_FILENAME]
+                    ),
+                    (episode[SampleBatch.REWARDS] > 0).sum(),
                     episode.count,
                     episode[SampleBatch.ACTIONS],
                 )
-                if episode[SampleBatch.REWARDS].max() > 0:
-                    timesteps = episode.timeslices(1)
-                    for timestep in timesteps:
-                        self._add_single_batch(timestep, **kwargs)
+                self._problems_solved.add(
+                    episode[SampleBatch.INFOS][0][PROBLEM_FILENAME]
+                )
+                timesteps = episode.timeslices(1)
+                for timestep in timesteps:
+                    self._add_single_batch(timestep, **kwargs)
 
     def sample(self, num_items: int, **kwargs) -> Optional[SampleBatchType]:
         """

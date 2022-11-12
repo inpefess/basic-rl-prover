@@ -16,16 +16,12 @@
 a wrapper over ``gym-saturation`` environment using ast2vec model to embed
 logical clauses
 """
-from itertools import chain
-from operator import itemgetter
-from typing import List, Tuple
+from typing import List
 from urllib.request import Request, urlopen
 
 import gym
 import numpy as np
 import orjson
-from tptp_lark_parser.grammar import Clause, Function, Literal, Term
-from tptp_lark_parser.tptp_parser import TPTPParser
 
 
 def _pad_features(features: np.ndarray, features_num: int) -> np.ndarray:
@@ -42,7 +38,7 @@ def _pad_features(features: np.ndarray, features_num: int) -> np.ndarray:
 class AST2VecFeatures(gym.Wrapper):
     """A box wrapper for ``SaturationEnv``."""
 
-    _torch_serve_url = "http://127.0.0.1:8080/predictions/ast2vec"
+    _torch_serve_url = "http://127.0.0.1:9080/predictions/ast2vec"
 
     def __init__(
         self,
@@ -69,7 +65,6 @@ class AST2VecFeatures(gym.Wrapper):
             }
         )
         self.encoded_state: List[np.ndarray] = []
-        self.tptp_parser = TPTPParser(extendable=True)
 
     def reset(self, **kwargs):
         """Reset the environment."""
@@ -79,11 +74,10 @@ class AST2VecFeatures(gym.Wrapper):
 
     def _transform(self, observation):
         new_clauses = [
-            clause["literals"]
-            for clause in map(
-                orjson.loads,
-                observation["real_obs"][len(self.encoded_state) :],
-            )
+            clause.literals
+            for clause in list(observation["real_obs"].values())[
+                len(self.encoded_state) :
+            ]
         ]
         new_embeddings = map(self.ast2vec_features, new_clauses)
         self.encoded_state += list(new_embeddings)
@@ -99,6 +93,7 @@ class AST2VecFeatures(gym.Wrapper):
     def step(self, action):
         """Apply the agent's action."""
         observation, reward, done, info = self.env.step(action)
+        info["real_obs"] = observation["real_obs"]
         return self._transform(observation), reward, done, info
 
     def ast2vec_features(self, literals_str: str) -> dict:
@@ -108,51 +103,22 @@ class AST2VecFeatures(gym.Wrapper):
         :param literals_str: literals to encode
         :returns: observation dict with ast2vec encoding instead of clauses
         """
-        clause = self.tptp_parser.parse(f"cnf(clause,plain, {literals_str}).")[
-            0
-        ]
+        prepared_literals = (
+            literals_str.replace("==", "^^")
+            .replace("!=", "^^^")
+            .replace("=", "==")
+            .replace("^^^", "!=")
+            .replace("^^", "==")
+            .replace("$false", "False")
+        )
         req = Request(
             self._torch_serve_url,
-            orjson.dumps({"data": _to_python(clause)}),
+            f'{{"data": "{prepared_literals}"}}'.encode("utf8"),
             {"Content-Type": "application/json"},
         )
         with urlopen(req) as response:
             clause_embedding = orjson.loads(response.read().decode("utf-8"))
         return clause_embedding
-
-
-def _term_to_python(term: Term) -> Tuple[str, Tuple[str, ...]]:
-    if isinstance(term, Function):
-        func_name = f"f{term.index}"
-        arguments = tuple(map(_term_to_python, term.arguments))
-        return (
-            f"{func_name}({','.join(map(itemgetter(0), arguments))})",
-            tuple(chain(*map(itemgetter(1), arguments))),
-        )
-    var_name = f"v{term.index}"
-    return var_name, (var_name,)
-
-
-def _literal_to_python(literal: Literal) -> Tuple[str, Tuple[str, ...]]:
-    res = "~" if literal.negated else ""
-    arguments = tuple(_term_to_python(term) for term in literal.atom.arguments)
-    predicate_name = f"p{literal.atom.index}"
-    if predicate_name != "=":
-        res += f"{predicate_name}({','.join(map(itemgetter(0), arguments))})"
-    else:
-        res += f"({arguments[0][0]} == {arguments[1][0]})"
-    return res, tuple(chain(*map(itemgetter(1), arguments)))
-
-
-def _to_python(clause: Clause) -> str:
-    literals = tuple(map(_literal_to_python, clause.literals))
-    signature = ", ".join(
-        sorted(tuple(set(chain(*map(itemgetter(1), literals)))))
-    )
-    body = " | ".join(map(itemgetter(0), literals))
-    return f"""def x{clause.label}({signature}):
-    return {'false' if body == '' else body}
-"""
 
 
 def ast2vec_env_creator(env_config: dict) -> gym.Wrapper:
@@ -167,14 +133,12 @@ def ast2vec_env_creator(env_config: dict) -> gym.Wrapper:
     ...     "TPTP-mock", "Problems", "*", "*-*.p"
     ...     )
     ... ))
-    >>> env = ast2vec_env_creator(
-    ...     {"problem_list": problem_list, "vampire_binary_path": "vampire"}
-    ... )
+    >>> env = ast2vec_env_creator({"problem_list": problem_list})
     >>> env.observation_space["avail_actions"].shape[1]
     256
 
     :param env_config: a custom environment config
     :returns: a ``SaturationEnv``  with ast2vec encoding
     """
-    env = gym.make("GymVampire-v0", **env_config)
+    env = gym.make("Vampire-v0", **env_config)
     return AST2VecFeatures(env, 256)

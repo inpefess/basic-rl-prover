@@ -41,14 +41,13 @@ How to use
 
 .. code:: python
 
-   from basic_rl_prover.constants import TRAIN_PROBLEMS, TEST_PROBLEMS
-   from basic_rl_prover.train_prover import train_a_prover
+   from basic_rl_prover.constants import TRAIN_PROBLEMS
    from basic_rl_prover.test_prover import upload_and_test_agent
+   from basic_rl_prover.train_prover import train_a_prover
    
    train_a_prover(TRAIN_PROBLEMS)
-   upload_and_test_agent(TEST_PROBLEMS)
+   upload_and_test_agent(TRAIN_PROBLEMS)
 
-	  
 How to Contribute
 =================
 
@@ -59,14 +58,12 @@ are welcome. To start:
 
    git clone https://github.com/inpefess/basic-rl-prover
    cd basic-rl-prover
-   # activate python virtual environment with Python 3.7+
-   pip install -U pip
-   pip install -U setuptools wheel poetry
+   # activate python virtual environment with Python 3.8+ and poetry installed
    poetry install
    # recommended but not necessary
    pre-commit install
    
-To check the code quality before creating a pull request, one might run
+To check the code quality before creating a pull request, one should run
 the script ``local-build.sh``.
 
 Reporting issues or problems with the software
@@ -78,4 +75,5 @@ tracker <https://github.com/inpefess/basic-rl-prover/issues>`__.
 How to Cite
 ===========
 
-If you want to cite this prototype in your research paper, please use the following arXiv entry: `<https://arxiv.org/abs/2209.02562>`__.
+If you want to cite this project in your research paper, please use
+the following arXiv entry: `<https://arxiv.org/abs/2209.02562>`__.

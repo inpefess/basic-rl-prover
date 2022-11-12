@@ -18,10 +18,10 @@ from threading import Thread
 
 import numpy as np
 from gym_saturation.envs.saturation_env import (
-    POSITIVE_ACTIONS,
     PROBLEM_FILENAME,
     STATE_DIFF_UPDATED,
 )
+from gym_saturation.utils import Clause
 from pytest import fixture
 from ray.rllib.policy.sample_batch import SampleBatch
 
@@ -41,7 +41,7 @@ class DummyHTTPHandler(BaseHTTPRequestHandler):
 @fixture(autouse=True, scope="session")
 def http_server():
     """Mock TorchServe behaviour with a simplistic HTTP server."""
-    with HTTPServer(("localhost", 8080), DummyHTTPHandler) as server:
+    with HTTPServer(("localhost", 9080), DummyHTTPHandler) as server:
         thread = Thread(target=server.serve_forever)
         thread.daemon = True
         thread.start()
@@ -51,46 +51,45 @@ def http_server():
 @fixture()
 def sample_batch():
     """Return a sample batch similar to one returned by ``gym_saturation``."""
-    clause1 = {
-        "class": "Clause",
-        "processed": True,
-        "literals": [],
-        "label": "this_is_a_test_case",
-        "birth_step": 1,
-        "inference_parents": ["initial"],
-        "inference_rule": "success",
-    }
-    clause0 = {
-        "class": "Clause",
-        "processed": True,
-        "literals": [
-            {
-                "class": "Literal",
-                "negated": False,
-                "atom": {
-                    "class": "Predicate",
-                    "name": "this_is_a_test_case",
-                    "arguments": [],
-                },
-            }
-        ],
-        "label": "initial",
-        "birth_step": 0,
-        "inference_parents": None,
-        "inference_rule": None,
-    }
+    clause1 = Clause(
+        literals="$false",
+        label="false",
+        role="lemma",
+        inference_parents=["initial"],
+        inference_rule="dummy",
+        processed=True,
+        birth_step=1,
+    )
+    clause0 = Clause(
+        literals="p(X)",
+        label="initial",
+        role="lemma",
+        inference_parents=None,
+        inference_rule=None,
+        processed=True,
+        birth_step=0,
+    )
     return SampleBatch(
         infos=[
-            {STATE_DIFF_UPDATED: {0: clause0}, PROBLEM_FILENAME: "test"},
             {
-                STATE_DIFF_UPDATED: {1: clause1},
+                STATE_DIFF_UPDATED: {0: clause0},
                 PROBLEM_FILENAME: "test",
+                "real_obs": {"initial": clause0},
             },
-            {STATE_DIFF_UPDATED: {0: clause0}, PROBLEM_FILENAME: "test"},
             {
                 STATE_DIFF_UPDATED: {1: clause1},
-                POSITIVE_ACTIONS: (0, 1),
                 PROBLEM_FILENAME: "test",
+                "real_obs": {"initial": clause0, "false": clause1},
+            },
+            {
+                STATE_DIFF_UPDATED: {0: clause0},
+                PROBLEM_FILENAME: "test",
+                "real_obs": {"initial": clause0},
+            },
+            {
+                STATE_DIFF_UPDATED: {1: clause1},
+                PROBLEM_FILENAME: "test",
+                "real_obs": {"initial": clause0, "false": clause1},
             },
         ],
         rewards=np.array([0.0, 0.0, 0.0, 1.0]),

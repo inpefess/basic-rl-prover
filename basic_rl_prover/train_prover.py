@@ -34,26 +34,20 @@ from basic_rl_prover.custom_replay_buffer import CustomReplayBuffer
 def _set_other_parameters(config: DQNConfig) -> None:
     config.framework("torch")
     config.resources(num_gpus=1)
-    config.exploration(explore=False)
-    config.debugging(seed=777)
+    config.exploration(explore=True)
+    config.debugging(seed=17)
     config.reporting(min_sample_timesteps_per_iteration=1)
 
 
-def get_config(
-    problem_list: List[str],
-    vampire_binary_path: Optional[str] = None,
-) -> DQNConfig:
+def get_config(problem_list: List[str]) -> DQNConfig:
     """
     Get a prepacked config.
 
     :param problem_list: a list of filenames of TPTP problems
-    :param vampire_binary_path: a full path to Vampire binary
     :returns: a config
     """
     register_env("ast2vec_saturation", ast2vec_env_creator)
     env_config = {"problem_list": problem_list, "max_clauses": 500}
-    if vampire_binary_path is not None:
-        env_config["vampire_binary_path"] = vampire_binary_path
     config = DQNConfig()
     config.training(
         model={
@@ -67,6 +61,7 @@ def get_config(
             "capacity": 10000,
         },
         lr=0.01,
+        num_steps_sampled_before_learning_starts=1,
     )
     config.environment(
         env="ast2vec_saturation",
@@ -75,7 +70,7 @@ def get_config(
     )
     config.rollouts(
         batch_mode="complete_episodes",
-        horizon=100,
+        horizon=20,
         num_rollout_workers=2,
     )
     _set_other_parameters(config)
@@ -86,7 +81,6 @@ def train_a_prover(
     problem_list: List[str],
     stop: Optional[Dict[str, int]] = None,
     custom_config: Optional[Dict[str, Any]] = None,
-    vampire_binary_path: Optional[str] = None,
 ) -> None:
     """
     Run Ray pipeline.
@@ -99,31 +93,34 @@ def train_a_prover(
     ...         "resources", "TPTP-mock", "Problems", "TST", "TST003-1.p"
     ...     ))
     ... )
+    >>> # the shortest path to the proof here is [0, 1]
+    >>> # 2 is added after 0 because of exploration
+    >>> # and all three actions contribute to the proof
     >>> train_a_prover(
     ...     [problem_filename],
     ...     {"training_iteration": 1},
     ...     {
-    ...         "timesteps_per_iteration": 1,
+    ...         "min_sample_timesteps_per_iteration": 1,
     ...         "train_batch_size": 1,
     ...         "num_workers": 1,
-    ...     },
-    ...     "vampire",
+    ...     }
     ... )
     == Status ==
-    .../resources/TPTP-mock/Problems/TST/TST003-1.p 1.0 2 [0 1]
+    ... TST003-1.p 3 3 [0 2 1]
     ...
     >>> from basic_rl_prover.test_prover import upload_and_test_agent
+    >>> # the actual proof consists of five steps though: 0, 1, 2, 0+1,
+    >>> # and final $false. They are selected automatically by Vampire
     >>> upload_and_test_agent([problem_filename])
-    TST003-1.p 1.0 2 [0, 1]
+    TST003-1.p 1.0 5 2 [0, 1]
 
     :param problem_list: a list of filenames of TPTP problems
     :param stop: `a stop condition <https://docs.ray.io/en/latest/tune/tutorials/tune-stopping.html#stopping-with-a-dictionary>`_
     :param custom_config: additional parameters to change in the default config
-    :param vampire_binary_path: a full path to Vampire binary
     :returns:
     """
     ray.init(ignore_reinit_error=True)
-    full_config = dict(get_config(problem_list, vampire_binary_path).to_dict())
+    full_config = dict(get_config(problem_list).to_dict())
     if custom_config is not None:
         full_config.update(custom_config)
     run_config = RunConfig(
@@ -132,7 +129,7 @@ def train_a_prover(
         checkpoint_config=CheckpointConfig(checkpoint_frequency=1),
         stop=stop,
     )
-    tune_config = TuneConfig(time_budget_s=3600)
+    tune_config = TuneConfig(time_budget_s=900)
     Tuner(
         trainable=CustomDQN,
         param_space=full_config,

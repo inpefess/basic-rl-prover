@@ -16,30 +16,17 @@
 Useful Constants
 ================
 """
-
 import os
-from glob import glob
 
 TPTP_PROBLEMS_FOLDER = os.path.join(
-    os.environ["WORK"], "data", "TPTP-v8.0.0", "Problems"
+    os.environ["WORK"], "data", "TPTP-v8.1.2", "Problems"
 )
-# train on set theory problems
-TRAIN_PROBLEMS = sorted(
-    glob(
-        os.path.join(
-            TPTP_PROBLEMS_FOLDER,
-            "SET",
-            "SET001-1.p",
-        )
+# train on several theory problems
+TRAIN_PROBLEMS = [
+    os.path.join(
+        TPTP_PROBLEMS_FOLDER,
+        "SET",
+        f"SET00{i}-1.p",
     )
-)
-# test a trained policy on group theory problems
-TEST_PROBLEMS = sorted(
-    glob(
-        os.path.join(
-            TPTP_PROBLEMS_FOLDER,
-            "SET",
-            "SET01*-*.p",
-        )
-    )
-)
+    for i in [1, 2, 3, 4, 6, 8]
+]
