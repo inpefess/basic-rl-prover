@@ -41,7 +41,7 @@ class DummyHTTPHandler(BaseHTTPRequestHandler):
 @fixture(autouse=True, scope="session")
 def http_server():
     """Mock TorchServe behaviour with a simplistic HTTP server."""
-    with HTTPServer(("localhost", 8080), DummyHTTPHandler) as server:
+    with HTTPServer(("localhost", 9080), DummyHTTPHandler) as server:
         thread = Thread(target=server.serve_forever)
         thread.daemon = True
         thread.start()

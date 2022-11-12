@@ -38,7 +38,7 @@ def _pad_features(features: np.ndarray, features_num: int) -> np.ndarray:
 class AST2VecFeatures(gym.Wrapper):
     """A box wrapper for ``SaturationEnv``."""
 
-    _torch_serve_url = "http://127.0.0.1:8080/predictions/ast2vec"
+    _torch_serve_url = "http://127.0.0.1:9080/predictions/ast2vec"
 
     def __init__(
         self,
