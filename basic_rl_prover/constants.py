@@ -19,7 +19,7 @@ Useful Constants
 import os
 
 TPTP_PROBLEMS_FOLDER = os.path.join(
-    os.environ["WORK"], "data", "TPTP-v8.0.0", "Problems"
+    os.environ["WORK"], "data", "TPTP-v8.1.2", "Problems"
 )
 # train on several theory problems
 TRAIN_PROBLEMS = [
