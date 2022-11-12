@@ -42,8 +42,8 @@ How to use
 .. code:: python
 
    from basic_rl_prover.constants import TRAIN_PROBLEMS
-   from basic_rl_prover.train_prover import train_a_prover
    from basic_rl_prover.test_prover import upload_and_test_agent
+   from basic_rl_prover.train_prover import train_a_prover
    
    train_a_prover(TRAIN_PROBLEMS)
    upload_and_test_agent(TRAIN_PROBLEMS)
