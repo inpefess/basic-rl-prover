@@ -47,14 +47,14 @@ class CustomReplayBuffer(ReplayBuffer):
     >>> sample_batch = getfixture("sample_batch") # noqa: F821
     >>> replay_buffer.add(sample_batch)
     >>> replay_buffer.stats()["num_entries"]
-    2
+    4
     >>> sample = replay_buffer.sample(1000)
     >>> max(sample["rewards"])
     1.0
     >>> set(sample["actions"])
     {0, 1}
     >>> set(sample[SampleBatch.EPS_ID])
-    {1}
+    {0, 1}
     """
 
     def __init__(
@@ -94,17 +94,12 @@ class CustomReplayBuffer(ReplayBuffer):
                     episode.count,
                     episode[SampleBatch.ACTIONS],
                 )
-                if (
-                    episode[SampleBatch.REWARDS].max() > 0
-                    and episode[SampleBatch.INFOS][0][PROBLEM_FILENAME]
-                    not in self._problems_solved
-                ):
-                    self._problems_solved.add(
-                        episode[SampleBatch.INFOS][0][PROBLEM_FILENAME]
-                    )
-                    timesteps = episode.timeslices(1)
-                    for timestep in timesteps:
-                        self._add_single_batch(timestep, **kwargs)
+                self._problems_solved.add(
+                    episode[SampleBatch.INFOS][0][PROBLEM_FILENAME]
+                )
+                timesteps = episode.timeslices(1)
+                for timestep in timesteps:
+                    self._add_single_batch(timestep, **kwargs)
 
     def sample(self, num_items: int, **kwargs) -> Optional[SampleBatchType]:
         """
