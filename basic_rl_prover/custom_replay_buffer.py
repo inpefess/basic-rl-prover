@@ -1,9 +1,5 @@
 #   Copyright 2022 Boris Shminke
 #
-#   This file is a derivative work based on the original work of
-#   The Ray Team (https://github.com/ray-project/ray) distributed
-#   under the Apache 2.0 license.
-#
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #   You may obtain a copy of the License at
@@ -23,7 +19,7 @@ Custom Replay Buffer
 import logging
 import os
 import sys
-from typing import Optional, Set, Union
+from typing import Optional, Union
 
 from gym_saturation.envs.saturation_env import PROBLEM_FILENAME
 from ray.rllib.policy.sample_batch import SampleBatch
@@ -73,7 +69,7 @@ class CustomReplayBuffer(ReplayBuffer):
         :param kwargs: Forward compatibility kwargs.
         """
         super().__init__(capacity, storage_unit, **kwargs)
-        self._problems_solved: Set[str] = set()
+        self._positive_actions_count: int = 0
 
     @override(ReplayBuffer)
     def add(self, batch: SampleBatchType, **kwargs) -> None:
@@ -84,18 +80,20 @@ class CustomReplayBuffer(ReplayBuffer):
         ):
             episodes = batch.split_by_episode()
             for episode in episodes:
+                positive_actions_count = (
+                    episode[SampleBatch.REWARDS] > 0
+                ).sum()
+                self._positive_actions_count += positive_actions_count
                 logger.info(
-                    "EPISODE %d: %s %d %d %s",
+                    "EPISODE %d: %s %d %d %s %.2f",
                     episode[SampleBatch.EPS_ID][0],
                     os.path.basename(
                         episode[SampleBatch.INFOS][0][PROBLEM_FILENAME]
                     ),
-                    (episode[SampleBatch.REWARDS] > 0).sum(),
+                    positive_actions_count,
                     episode.count,
                     episode[SampleBatch.ACTIONS],
-                )
-                self._problems_solved.add(
-                    episode[SampleBatch.INFOS][0][PROBLEM_FILENAME]
+                    self._positive_actions_count / (len(self) + episode.count),
                 )
                 timesteps = episode.timeslices(1)
                 for timestep in timesteps:

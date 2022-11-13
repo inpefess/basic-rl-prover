@@ -1,9 +1,5 @@
 #   Copyright 2022 Boris Shminke
 #
-#   This file is a derivative work based on the original work of
-#   The Ray Team (https://github.com/ray-project/ray) distributed
-#   under the Apache 2.0 license.
-#
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
 #   You may obtain a copy of the License at
