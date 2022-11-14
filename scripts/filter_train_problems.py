@@ -53,7 +53,10 @@ def filter_train_problems(
     for line in problem_statistics:
         if train_problem_count >= max_problem_count:
             break
-        if 0 < line["proof_length"] <= max_proof_length:
+        if (
+            0 < line["proof_length"] <= max_proof_length
+            and line["saturation_steps"] > 1
+        ):
             print(line["problem"])
             train_problem_count += 1
 
