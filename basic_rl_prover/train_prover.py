@@ -47,7 +47,7 @@ def get_config(problem_list: List[str]) -> DQNConfig:
     :returns: a config
     """
     register_env("ast2vec_saturation", ast2vec_env_creator)
-    env_config = {"problem_list": problem_list, "max_clauses": 500}
+    env_config = {"problem_list": problem_list, "max_clauses": 600}
     config = DQNConfig()
     config.training(
         model={
@@ -70,7 +70,7 @@ def get_config(problem_list: List[str]) -> DQNConfig:
     )
     config.rollouts(
         batch_mode="complete_episodes",
-        horizon=20,
+        horizon=30,
         num_rollout_workers=2,
     )
     _set_other_parameters(config)
