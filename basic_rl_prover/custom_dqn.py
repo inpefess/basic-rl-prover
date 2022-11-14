@@ -44,7 +44,10 @@ class CustomDQN(DQN):
 
         :returns: the results dict from executing the training iteration.
         """
-        if not self.local_replay_buffer or len(self.local_replay_buffer) == 0:
+        if (
+            not self.local_replay_buffer
+            or len(self.local_replay_buffer.positive_buffer) == 0
+        ):
             self.config[
                 "num_steps_sampled_before_learning_starts"
             ] = sys.maxsize

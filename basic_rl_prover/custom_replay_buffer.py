@@ -21,8 +21,9 @@ import os
 import sys
 from typing import Optional, Union
 
+import numpy as np
 from gym_saturation.envs.saturation_env import PROBLEM_FILENAME
-from ray.rllib.policy.sample_batch import SampleBatch
+from ray.rllib.policy.sample_batch import SampleBatch, concat_samples
 from ray.rllib.utils.annotations import override
 from ray.rllib.utils.replay_buffers.replay_buffer import (
     ReplayBuffer,
@@ -35,6 +36,21 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
+def filter_batch(
+    batch_to_filter: SampleBatch, indices: np.ndarray
+) -> SampleBatch:
+    """
+    Filter only specified indices from a batch.
+
+    :param batch_to_filter: a batch to filter
+    :param indices: indices to leave (Boolean array)
+    :returns: a new batch with only specified indices
+    """
+    return SampleBatch(
+        {key: batch_to_filter[key][indices] for key in batch_to_filter.keys()}
+    )
+
+
 class CustomReplayBuffer(ReplayBuffer):
     """
     A custom replay buffer.
@@ -42,11 +58,9 @@ class CustomReplayBuffer(ReplayBuffer):
     >>> replay_buffer = CustomReplayBuffer()
     >>> sample_batch = getfixture("sample_batch") # noqa: F821
     >>> replay_buffer.add(sample_batch)
-    >>> replay_buffer.stats()["num_entries"]
-    4
     >>> sample = replay_buffer.sample(1000)
-    >>> max(sample["rewards"])
-    1.0
+    >>> sample["rewards"].sum()
+    500.0
     >>> set(sample["actions"])
     {0, 1}
     >>> set(sample[SampleBatch.EPS_ID])
@@ -69,35 +83,37 @@ class CustomReplayBuffer(ReplayBuffer):
         :param kwargs: Forward compatibility kwargs.
         """
         super().__init__(capacity, storage_unit, **kwargs)
-        self._positive_actions_count: int = 0
+        positive_capacity = capacity // 2
+        self.positive_buffer = ReplayBuffer(
+            positive_capacity, StorageUnit.TIMESTEPS
+        )
+        self.negative_buffer = ReplayBuffer(
+            capacity - positive_capacity, StorageUnit.TIMESTEPS
+        )
 
     @override(ReplayBuffer)
     def add(self, batch: SampleBatchType, **kwargs) -> None:
-        """Add only the episodes with positive reward."""
-        if (
-            isinstance(batch, SampleBatch)
-            and self.storage_unit == StorageUnit.TIMESTEPS
-        ):
+        """Add to a sub-buffer depending on the reward."""
+        if isinstance(batch, SampleBatch):
+            positive_action_indices = batch[SampleBatch.REWARDS] > 0
+            self.positive_buffer.add(
+                filter_batch(batch, positive_action_indices)
+            )
+            self.negative_buffer.add(
+                filter_batch(batch, ~positive_action_indices)
+            )
             episodes = batch.split_by_episode()
             for episode in episodes:
-                positive_actions_count = (
-                    episode[SampleBatch.REWARDS] > 0
-                ).sum()
-                self._positive_actions_count += positive_actions_count
                 logger.info(
-                    "EPISODE %d: %s %d %d %s %.2f",
+                    "EPISODE %d: %s %d %d %s",
                     episode[SampleBatch.EPS_ID][0],
                     os.path.basename(
                         episode[SampleBatch.INFOS][0][PROBLEM_FILENAME]
                     ),
-                    positive_actions_count,
+                    positive_action_indices.sum(),
                     episode.count,
                     episode[SampleBatch.ACTIONS],
-                    self._positive_actions_count / (len(self) + episode.count),
                 )
-                timesteps = episode.timeslices(1)
-                for timestep in timesteps:
-                    self._add_single_batch(timestep, **kwargs)
 
     def sample(self, num_items: int, **kwargs) -> Optional[SampleBatchType]:
         """
@@ -107,6 +123,12 @@ class CustomReplayBuffer(ReplayBuffer):
         :param kwargs: Forward compatibility kwargs.
         :returns: Concatenated batch of items.
         """
-        if len(self) == 0:
+        if len(self.positive_buffer) == 0:
             return SampleBatch({})
-        return super().sample(num_items, **kwargs)
+        num_positive_items = num_items // 2
+        return concat_samples(
+            [
+                self.positive_buffer.sample(num_positive_items),
+                self.negative_buffer.sample(num_items - num_positive_items),
+            ]
+        )
