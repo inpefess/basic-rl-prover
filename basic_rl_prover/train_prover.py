@@ -20,8 +20,10 @@ import os
 from typing import Any, Dict, List, Optional
 
 import ray
+from gym_saturation.envs.saturation_env import SaturationEnv
 from ray.air.config import CheckpointConfig, RunConfig
 from ray.rllib.algorithms.dqn import DQNConfig
+from ray.rllib.env.env_context import EnvContext
 from ray.tune import TuneConfig, Tuner
 from ray.tune.registry import register_env
 
@@ -67,6 +69,7 @@ def get_config(problem_list: List[str]) -> DQNConfig:
         env="ast2vec_saturation",
         env_config=env_config,
         disable_env_checking=True,
+        env_task_fn=curriculum_fn,
     )
     config.rollouts(
         batch_mode="complete_episodes",
@@ -75,6 +78,33 @@ def get_config(problem_list: List[str]) -> DQNConfig:
     )
     _set_other_parameters(config)
     return config
+
+
+# pylint: disable=unused-argument
+def curriculum_fn(
+    train_results: dict, task_settable_env: SaturationEnv, env_ctx: EnvContext
+) -> str:
+    """
+    Select a TPTP problem to solve next.
+
+    :param train_results: the train results returned by Algorithm.train().
+    :param task_settable_env: an environment object
+    :param env_ctx: the env context object
+    :returns: a TPTP problem to solve next. It may be the same one.
+    """
+    if train_results["sampler_results"]["hist_stats"]["episode_reward"][
+        -5:
+    ] == 5 * [1.0]:
+        return task_settable_env.problem_list[
+            (
+                task_settable_env.problem_list.index(
+                    task_settable_env.get_task()
+                )
+                + 1
+            )
+            % len(task_settable_env.problem_list)
+        ]
+    return task_settable_env.get_task()
 
 
 def train_a_prover(
