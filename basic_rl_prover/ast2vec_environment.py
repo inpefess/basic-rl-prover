@@ -110,6 +110,7 @@ class AST2VecFeatures(gym.Wrapper):
             .replace("^^^", "!=")
             .replace("^^", "==")
             .replace("$false", "False")
+            .replace("as", "__as")
         )
         req = Request(
             self._torch_serve_url,
