@@ -95,15 +95,9 @@ class CustomReplayBuffer(ReplayBuffer):
     def add(self, batch: SampleBatchType, **kwargs) -> None:
         """Add to a sub-buffer depending on the reward."""
         if isinstance(batch, SampleBatch):
-            positive_action_indices = batch[SampleBatch.REWARDS] > 0
-            self.positive_buffer.add(
-                filter_batch(batch, positive_action_indices)
-            )
-            self.negative_buffer.add(
-                filter_batch(batch, ~positive_action_indices)
-            )
             episodes = batch.split_by_episode()
             for episode in episodes:
+                positive_action_indices = episode[SampleBatch.REWARDS] > 0
                 logger.info(
                     "EPISODE %d: %s %d %d %s",
                     episode[SampleBatch.EPS_ID][0],
@@ -114,6 +108,13 @@ class CustomReplayBuffer(ReplayBuffer):
                     episode.count,
                     episode[SampleBatch.ACTIONS],
                 )
+                if episode[SampleBatch.REWARDS].sum() > 0:
+                    self.positive_buffer.add(
+                        filter_batch(episode, positive_action_indices)
+                    )
+                    self.negative_buffer.add(
+                        filter_batch(episode, ~positive_action_indices)
+                    )
 
     def sample(self, num_items: int, **kwargs) -> Optional[SampleBatchType]:
         """
