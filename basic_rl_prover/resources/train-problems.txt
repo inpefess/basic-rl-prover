@@ -4,3 +4,7 @@ SET003-1.log
 SET004-1.log
 SET006-1.log
 SET008-1.log
+SET012-1.log
+SET013-1.log
+SET014-2.log
+SET015-1.log
