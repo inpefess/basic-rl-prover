@@ -18,11 +18,14 @@ Custom Replay Buffer
 """
 import logging
 import os
+import shutil
 import sys
-from typing import Optional, Union
+from hashlib import sha256
+from typing import Dict, Optional, Union
 
 import numpy as np
 from gym_saturation.envs.saturation_env import PROBLEM_FILENAME
+from gym_saturation.utils import Clause
 from ray.rllib.policy.sample_batch import SampleBatch, concat_samples
 from ray.rllib.utils.annotations import override
 from ray.rllib.utils.replay_buffers.replay_buffer import (
@@ -30,6 +33,8 @@ from ray.rllib.utils.replay_buffers.replay_buffer import (
     StorageUnit,
 )
 from ray.rllib.utils.typing import SampleBatchType
+
+GENERATED_PROBLEMS_DIR = os.path.join("/", "tmp", "generated_problems")
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -49,6 +54,40 @@ def filter_batch(
     return SampleBatch(
         {key: batch_to_filter[key][indices] for key in batch_to_filter.keys()}
     )
+
+
+def generate_problems(final_state: Dict[str, Clause]) -> None:
+    """
+    Generate TPTP problems related to failed one.
+
+    :param final_state: the final state of a failed proof attempts
+    """
+    original_clauses = "\n".join(
+        [
+            f"cnf({label},plain,{clause.literals})."
+            for label, clause in final_state.items()
+            if clause.inference_rule == "input"
+        ]
+    )
+    generated_clauses = [
+        f"fof({label},plain,~({clause.literals}))."
+        for label, clause in final_state.items()
+        if clause.inference_rule != "input"
+    ]
+    shutil.rmtree(GENERATED_PROBLEMS_DIR, ignore_errors=True)
+    os.mkdir(GENERATED_PROBLEMS_DIR)
+    for generated_clause in generated_clauses:
+        problem_text = "\n".join([original_clauses, generated_clause])
+        problem_filename = os.path.join(
+            GENERATED_PROBLEMS_DIR,
+            f"{sha256(problem_text.encode('utf8')).hexdigest()}.p",
+        )
+        with open(
+            problem_filename,
+            "w",
+            encoding="utf8",
+        ) as problem_file:
+            problem_file.write(problem_text)
 
 
 class CustomReplayBuffer(ReplayBuffer):
@@ -114,6 +153,10 @@ class CustomReplayBuffer(ReplayBuffer):
                     )
                     self.negative_buffer.add(
                         filter_batch(episode, ~positive_action_indices)
+                    )
+                else:
+                    generate_problems(
+                        episode[SampleBatch.INFOS][-1]["real_obs"]
                     )
 
     def sample(self, num_items: int, **kwargs) -> Optional[SampleBatchType]:

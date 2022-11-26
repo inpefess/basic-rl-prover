@@ -17,6 +17,7 @@ Training an RL Prover
 =====================
 """
 import os
+from glob import glob
 from typing import Any, Dict, List, Optional
 
 import ray
@@ -30,7 +31,10 @@ from ray.tune.registry import register_env
 from basic_rl_prover.action_selection_model import ActionSelectionModel
 from basic_rl_prover.ast2vec_environment import ast2vec_env_creator
 from basic_rl_prover.custom_dqn import CustomDQN
-from basic_rl_prover.custom_replay_buffer import CustomReplayBuffer
+from basic_rl_prover.custom_replay_buffer import (
+    GENERATED_PROBLEMS_DIR,
+    CustomReplayBuffer,
+)
 
 
 def _set_other_parameters(config: DQNConfig) -> None:
@@ -83,7 +87,7 @@ def get_config(problem_list: List[str]) -> DQNConfig:
 # pylint: disable=unused-argument
 def curriculum_fn(
     train_results: dict, task_settable_env: SaturationEnv, env_ctx: EnvContext
-) -> str:
+) -> List[str]:
     """
     Select a TPTP problem to solve next.
 
@@ -92,19 +96,25 @@ def curriculum_fn(
     :param env_ctx: the env context object
     :returns: a TPTP problem to solve next. It may be the same one.
     """
-    if train_results["sampler_results"]["hist_stats"]["episode_reward"][
-        -5:
-    ] == 5 * [1.0]:
-        return task_settable_env.problem_list[
-            (
-                task_settable_env.problem_list.index(
-                    task_settable_env.get_task()
+    current_task = task_settable_env.get_task()
+    if (
+        train_results["sampler_results"]["hist_stats"]["episode_reward"][-1]
+        == 1.0
+    ):
+        return [
+            task_settable_env.problem_list[
+                (
+                    task_settable_env.problem_list.index(
+                        task_settable_env.get_task()[0]
+                    )
+                    + 1
                 )
-                + 1
-            )
-            % len(task_settable_env.problem_list)
+                % len(task_settable_env.problem_list)
+            ]
         ]
-    return task_settable_env.get_task()
+    if len(current_task) > 1:
+        return [current_task[0]]
+    return current_task + glob(os.path.join(GENERATED_PROBLEMS_DIR, "*.p"))
 
 
 def train_a_prover(
