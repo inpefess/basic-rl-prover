@@ -18,10 +18,11 @@ Custom Replay Buffer
 """
 import logging
 import os
+import re
 import shutil
 import sys
 from hashlib import sha256
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 from gym_saturation.envs.saturation_env import PROBLEM_FILENAME
@@ -34,7 +35,9 @@ from ray.rllib.utils.replay_buffers.replay_buffer import (
 )
 from ray.rllib.utils.typing import SampleBatchType
 
-GENERATED_PROBLEMS_DIR = os.path.join("/", "tmp", "generated_problems")
+GENERATED_PROBLEMS_DIR = os.path.join(
+    "/", "home", "boris", "generated_problems"
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -56,6 +59,49 @@ def filter_batch(
     )
 
 
+def is_trivial_tautology(clause: Clause) -> bool:
+    """
+    Check whether a clause contains a literal and its negation.
+
+    :param clause: a TPTP clause
+    :returns: whether a clause is a trivial tautology or not
+    """
+    literals = clause.literals.split("|")
+    literals_count = len(literals)
+    for i, literal in enumerate(literals):
+        for j in range(i + 1, literals_count):
+            literal_one = literal.replace(" ", "")
+            literal_two = literals[j].replace(" ", "")
+            if (
+                literal_one[0] == "~"
+                and literal_one[1:] == literal_two
+                or literal_two[0] == "~"
+                and literal_two[1:] == literal_one
+            ):
+                return True
+    return False
+
+
+def negate_clause(clause: Clause) -> List[Clause]:
+    """
+    Transform a negation of a clause into list of clauses in CNF.
+
+    :param clause: a clause in TPTP syntax
+    :returns: a list of clauses in TPTP syntax.
+    """
+    skolemised_literals = re.sub(
+        r"X(\d+)", r"generated_symbol_\1", clause.literals
+    )
+    literals = skolemised_literals.split("|")
+    new_clauses = []
+    for literal in literals:
+        if "~" in literal:
+            new_clauses.append(Clause(literals=literal.replace("~", "")))
+        else:
+            new_clauses.append(Clause(literals=f"~{literal}"))
+    return new_clauses
+
+
 def generate_problems(final_state: Dict[str, Clause]) -> None:
     """
     Generate TPTP problems related to failed one.
@@ -69,18 +115,25 @@ def generate_problems(final_state: Dict[str, Clause]) -> None:
             if clause.inference_rule == "input"
         ]
     )
-    generated_clauses = [
-        f"fof({label},plain,~({clause.literals}))."
-        for label, clause in final_state.items()
+    generated_non_trivial_clauses = [
+        clause
+        for clause in final_state.values()
         if clause.inference_rule != "input"
+        and not is_trivial_tautology(clause)
     ]
     shutil.rmtree(GENERATED_PROBLEMS_DIR, ignore_errors=True)
     os.mkdir(GENERATED_PROBLEMS_DIR)
-    for generated_clause in generated_clauses:
-        problem_text = "\n".join([original_clauses, generated_clause])
+    for generated_clause in generated_non_trivial_clauses:
+        problem_text = "\n".join(
+            [original_clauses]
+            + [
+                f"cnf({clause.label},plain,{clause.literals})."
+                for clause in negate_clause(generated_clause)
+            ]
+        )
         problem_filename = os.path.join(
             GENERATED_PROBLEMS_DIR,
-            f"{sha256(problem_text.encode('utf8')).hexdigest()}.p",
+            f"generated{sha256(problem_text.encode('utf8')).hexdigest()}.p",
         )
         with open(
             problem_filename,
@@ -154,7 +207,10 @@ class CustomReplayBuffer(ReplayBuffer):
                     self.negative_buffer.add(
                         filter_batch(episode, ~positive_action_indices)
                     )
-                else:
+                elif (
+                    not "generated"
+                    in episode[SampleBatch.INFOS][-1]["problem_filename"]
+                ):
                     generate_problems(
                         episode[SampleBatch.INFOS][-1]["real_obs"]
                     )
