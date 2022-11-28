@@ -30,11 +30,12 @@ from ray.tune.registry import register_env
 
 from basic_rl_prover.action_selection_model import ActionSelectionModel
 from basic_rl_prover.ast2vec_environment import ast2vec_env_creator
-from basic_rl_prover.custom_dqn import CustomDQN
-from basic_rl_prover.custom_replay_buffer import (
+from basic_rl_prover.custom_callbacks import (
     GENERATED_PROBLEMS_DIR,
-    CustomReplayBuffer,
+    CustomCallbacks,
 )
+from basic_rl_prover.custom_dqn import CustomDQN
+from basic_rl_prover.custom_replay_buffer import CustomReplayBuffer
 
 
 def _set_other_parameters(config: DQNConfig) -> None:
@@ -43,6 +44,7 @@ def _set_other_parameters(config: DQNConfig) -> None:
     config.exploration(explore=True)
     config.debugging(seed=17)
     config.reporting(min_sample_timesteps_per_iteration=1)
+    config.callbacks(CustomCallbacks)
 
 
 def get_config(problem_list: List[str]) -> DQNConfig:
@@ -146,7 +148,7 @@ def train_a_prover(
     ...     }
     ... )
     == Status ==
-    ... TST003-1.p 3 3 [0 2 1]
+    ... TST003-1.p 3 3 [1 2 0]
     ...
     >>> from basic_rl_prover.test_prover import upload_and_test_agent
     >>> # the actual proof consists of five steps though: 0, 1, 2, 0+1,

@@ -63,7 +63,7 @@ def upload_and_test_agent(problem_list: List[str]) -> None:
     for filename in problem_list:
         env = gym.wrappers.TimeLimit(
             ast2vec_env_creator(
-                {"problem_list": [filename], "max_clauses": 500}
+                {"problem_list": [filename], "max_clauses": 600}
             ),
             max_episode_steps=100,
         )
