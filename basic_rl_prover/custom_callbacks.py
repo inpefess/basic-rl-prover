@@ -20,11 +20,13 @@ Custom Callbacks
 import os
 import re
 import shutil
+from glob import glob
 from hashlib import sha256
 from typing import Dict, List, Optional, Union
 
 from gym_saturation.envs.saturation_env import SaturationEnv
 from gym_saturation.utils import Clause
+from ray.rllib.algorithms.algorithm import Algorithm
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.env.base_env import BaseEnv
 from ray.rllib.evaluation import RolloutWorker
@@ -34,6 +36,35 @@ from ray.rllib.policy import Policy
 from ray.rllib.utils.typing import PolicyID
 
 GENERATED_PROBLEMS_DIR = os.path.join(os.environ["WORK"], "generated_problems")
+
+
+def _get_next_task(
+    problem_list: List[str],
+    problem_indices: List[int],
+    episode_rewards: List[float],
+) -> List[str]:
+    next_task = []
+    if problem_indices[-1] != -1 and episode_rewards[-1] > 0.0:
+        next_task = [
+            problem_list[(problem_indices[-1] + 1) % len(problem_list)]
+        ]
+    elif problem_indices[-1] != -1:
+        next_task = glob(os.path.join(GENERATED_PROBLEMS_DIR, "*.p"))
+    elif problem_indices[-5:] == 5 * [-1] and episode_rewards[-5:] == 5 * [
+        1.0
+    ]:
+        shutil.rmtree(GENERATED_PROBLEMS_DIR, ignore_errors=True)
+        os.mkdir(GENERATED_PROBLEMS_DIR)
+        next_task = [
+            problem_list[
+                [
+                    problem_index
+                    for problem_index in problem_indices
+                    if problem_index != -1
+                ][-1]
+            ]
+        ]
+    return next_task
 
 
 def is_trivial_tautology(clause: Clause) -> bool:
@@ -98,8 +129,6 @@ def generate_problems(final_state: Dict[str, Clause]) -> None:
         if clause.inference_rule != "input"
         and not is_trivial_tautology(clause)
     ]
-    shutil.rmtree(GENERATED_PROBLEMS_DIR, ignore_errors=True)
-    os.mkdir(GENERATED_PROBLEMS_DIR)
     for generated_clause in generated_non_trivial_clauses:
         problem_text = "\n".join(
             [original_clauses]
@@ -136,29 +165,73 @@ class CustomCallbacks(DefaultCallbacks):
         """Run when an episode is done.
 
         :param worker: Reference to the current roll-out worker.
-        :param base_env: BaseEnv running the episode. The underlying sub
+        :param base_env: ``BaseEnv`` running the episode. The underlying sub
             environment objects can be retrieved by calling
-            `base_env.get_sub_environments()`.
+            ``base_env.get_sub_environments()``.
         :param policies: Mapping of policy id to policy objects. In single
             agent mode there will only be a single "default_policy".
         :param episode: Episode object which contains episode state. You can
-            use the `episode.user_data` dict to store temporary data, and
-            `episode.custom_metrics` to store custom metrics for the episode.
+            use the ``episode.user_data`` dict to store temporary data, and
+            ``episode.custom_metrics`` to store custom metrics for the episode.
             In case of environment failures, episode may also be an Exception
             that gets thrown from the environment before the episode finishes.
             Users of this callback may then handle these error cases properly
             with their custom logic.
         :param env_index: The index of the sub-environment that ended the
-            episode (within the vector of sub-environments of the BaseEnv).
+            episode (within the vector of sub-environments of the ``BaseEnv``).
         :param kwargs: Forward compatibility placeholder.
         """
-        if isinstance(episode, EpisodeV2):
+        if isinstance(episode, Episode):
+            problem_filename = episode.last_info_for()["problem_filename"]
             if (
                 episode.total_reward == 0.0
-                # pylint: disable=protected-access
-                and "generated" in episode._last_infos["problem_filename"]
+                and "generated" not in problem_filename
             ):
-                saturation_env: SaturationEnv = (
-                    base_env.get_sub_environments()[0]
+                generate_problems(episode.last_info_for()["real_obs"])
+            saturation_env: SaturationEnv = base_env.get_sub_environments()[0]
+            episode.hist_data["problem_index"] = [
+                saturation_env.problem_list.index(problem_filename)
+                if problem_filename in saturation_env.problem_list
+                else -1
+            ]
+        else:
+            raise TypeError(f"Episode expected, got {type(episode)}")
+
+    def on_train_result(
+        self,
+        *,
+        algorithm: Algorithm,
+        result: dict,
+        **kwargs,
+    ) -> None:
+        """Call at the end of ``Algorithm.train()``.
+
+        :param algorithm: Current Algorithm instance.
+        :param result: Dict of results returned from ``Algorithm.train()`` call
+            (you can mutate this object to add additional metrics).
+        :param kwargs: Forward compatibility placeholder.
+        """
+        if not algorithm.workers:
+            raise ValueError("Worker set empty.")
+        problem_list = [
+            problem_list
+            for problem_list in algorithm.workers.foreach_worker(
+                lambda worker: worker.foreach_env(lambda env: env.problem_list)
+            )
+            if problem_list
+        ][0][0]
+        next_task = _get_next_task(
+            problem_list=problem_list,
+            problem_indices=result["sampler_results"]["hist_stats"][
+                "problem_index"
+            ],
+            episode_rewards=result["sampler_results"]["hist_stats"][
+                "episode_reward"
+            ],
+        )
+        if next_task:
+            algorithm.workers.foreach_worker(
+                lambda worker: worker.foreach_env(
+                    lambda env: env.set_task(next_task)
                 )
-                generate_problems(saturation_env.state["real_obs"])
+            )

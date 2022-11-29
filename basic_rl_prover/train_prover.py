@@ -17,23 +17,17 @@ Training an RL Prover
 =====================
 """
 import os
-from glob import glob
 from typing import Any, Dict, List, Optional
 
 import ray
-from gym_saturation.envs.saturation_env import SaturationEnv
 from ray.air.config import CheckpointConfig, RunConfig
 from ray.rllib.algorithms.dqn import DQNConfig
-from ray.rllib.env.env_context import EnvContext
 from ray.tune import TuneConfig, Tuner
 from ray.tune.registry import register_env
 
 from basic_rl_prover.action_selection_model import ActionSelectionModel
 from basic_rl_prover.ast2vec_environment import ast2vec_env_creator
-from basic_rl_prover.custom_callbacks import (
-    GENERATED_PROBLEMS_DIR,
-    CustomCallbacks,
-)
+from basic_rl_prover.custom_callbacks import CustomCallbacks
 from basic_rl_prover.custom_dqn import CustomDQN
 from basic_rl_prover.custom_replay_buffer import CustomReplayBuffer
 
@@ -75,7 +69,6 @@ def get_config(problem_list: List[str]) -> DQNConfig:
         env="ast2vec_saturation",
         env_config=env_config,
         disable_env_checking=True,
-        env_task_fn=curriculum_fn,
     )
     config.rollouts(
         batch_mode="complete_episodes",
@@ -84,39 +77,6 @@ def get_config(problem_list: List[str]) -> DQNConfig:
     )
     _set_other_parameters(config)
     return config
-
-
-# pylint: disable=unused-argument
-def curriculum_fn(
-    train_results: dict, task_settable_env: SaturationEnv, env_ctx: EnvContext
-) -> List[str]:
-    """
-    Select a TPTP problem to solve next.
-
-    :param train_results: the train results returned by Algorithm.train().
-    :param task_settable_env: an environment object
-    :param env_ctx: the env context object
-    :returns: a TPTP problem to solve next. It may be the same one.
-    """
-    current_task = task_settable_env.get_task()
-    if (
-        train_results["sampler_results"]["hist_stats"]["episode_reward"][-1]
-        == 1.0
-    ):
-        return [
-            task_settable_env.problem_list[
-                (
-                    task_settable_env.problem_list.index(
-                        task_settable_env.get_task()[0]
-                    )
-                    + 1
-                )
-                % len(task_settable_env.problem_list)
-            ]
-        ]
-    if len(current_task) > 1:
-        return [current_task[0]]
-    return current_task + glob(os.path.join(GENERATED_PROBLEMS_DIR, "*.p"))
 
 
 def train_a_prover(
@@ -171,7 +131,7 @@ def train_a_prover(
         checkpoint_config=CheckpointConfig(checkpoint_frequency=1),
         stop=stop,
     )
-    tune_config = TuneConfig(time_budget_s=900)
+    tune_config = TuneConfig(time_budget_s=3600)
     Tuner(
         trainable=CustomDQN,
         param_space=full_config,
