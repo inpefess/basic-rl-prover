@@ -40,9 +40,7 @@ with open(
         os.path.join(
             TPTP_PROBLEMS_FOLDER,
             train_problem[:3],
-            train_problem.replace("\r", "")
-            .replace("\n", "")
-            .replace(".log", ".p"),
+            train_problem.replace("\n", ""),
         )
         for train_problem in train_problems_file.readlines()
     ]
