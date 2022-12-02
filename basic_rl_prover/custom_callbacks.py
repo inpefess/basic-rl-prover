@@ -43,28 +43,34 @@ def _get_next_task(
     problem_indices: List[int],
     episode_rewards: List[float],
 ) -> List[str]:
-    next_task = []
-    if problem_indices[-1] != -1 and episode_rewards[-1] > 0.0:
-        next_task = [
-            problem_list[(problem_indices[-1] + 1) % len(problem_list)]
-        ]
-    elif problem_indices[-1] != -1:
-        next_task = glob(os.path.join(GENERATED_PROBLEMS_DIR, "*.p"))
-    elif problem_indices[-5:] == 5 * [-1] and episode_rewards[-5:] == 5 * [
-        1.0
-    ]:
-        shutil.rmtree(GENERATED_PROBLEMS_DIR, ignore_errors=True)
-        os.mkdir(GENERATED_PROBLEMS_DIR)
-        next_task = [
-            problem_list[
-                [
-                    problem_index
-                    for problem_index in problem_indices
-                    if problem_index != -1
-                ][-1]
+    if all(
+        problem_index == problem_indices[-1]
+        for problem_index in problem_indices[-10:]
+    ):
+        if (
+            len([reward for reward in episode_rewards[-10:] if reward > 0.0])
+            > 5
+        ):
+            if problem_indices[-1] != -1:
+                return [
+                    problem_list[(problem_indices[-1] + 1) % len(problem_list)]
+                ]
+            shutil.rmtree(GENERATED_PROBLEMS_DIR, ignore_errors=True)
+            os.mkdir(GENERATED_PROBLEMS_DIR)
+            return [
+                problem_list[
+                    [
+                        problem_index
+                        for problem_index in problem_indices
+                        if problem_index != -1
+                    ][-1]
+                ]
             ]
-        ]
-    return next_task
+        if problem_indices[-1] != -1 and any(
+            reward == 0.0 for reward in episode_rewards[-10:]
+        ):
+            return glob(os.path.join(GENERATED_PROBLEMS_DIR, "*.p"))
+    return []
 
 
 def is_trivial_tautology(clause: Clause) -> bool:
