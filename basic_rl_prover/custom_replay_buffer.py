@@ -83,12 +83,12 @@ class CustomReplayBuffer(ReplayBuffer):
         :param kwargs: Forward compatibility kwargs.
         """
         super().__init__(capacity, storage_unit, **kwargs)
-        positive_capacity = capacity // 2
-        self.positive_buffer = ReplayBuffer(
-            positive_capacity, StorageUnit.TIMESTEPS
+        non_zero_capacity = capacity // 2
+        self.non_zero_buffer = ReplayBuffer(
+            non_zero_capacity, StorageUnit.TIMESTEPS
         )
-        self.negative_buffer = ReplayBuffer(
-            capacity - positive_capacity, StorageUnit.TIMESTEPS
+        self.zero_buffer = ReplayBuffer(
+            capacity - non_zero_capacity, StorageUnit.TIMESTEPS
         )
 
     @override(ReplayBuffer)
@@ -97,23 +97,23 @@ class CustomReplayBuffer(ReplayBuffer):
         if isinstance(batch, SampleBatch):
             episodes = batch.split_by_episode()
             for episode in episodes:
-                positive_action_indices = episode[SampleBatch.REWARDS] > 0
+                non_zero_action_indices = episode[SampleBatch.REWARDS] != 0
                 logger.info(
-                    "EPISODE %d: %s %d %d %s",
+                    "EPISODE %d: %s %.2f %d %s",
                     episode[SampleBatch.EPS_ID][0],
                     os.path.basename(
                         episode[SampleBatch.INFOS][0][PROBLEM_FILENAME]
                     ),
-                    positive_action_indices.sum(),
+                    episode[SampleBatch.REWARDS].sum(),
                     episode.count,
                     episode[SampleBatch.ACTIONS],
                 )
-                if episode[SampleBatch.REWARDS].sum() > 0:
-                    self.positive_buffer.add(
-                        filter_batch(episode, positive_action_indices)
+                if episode[SampleBatch.REWARDS].sum() != 0:
+                    self.non_zero_buffer.add(
+                        filter_batch(episode, non_zero_action_indices)
                     )
-                    self.negative_buffer.add(
-                        filter_batch(episode, ~positive_action_indices)
+                    self.zero_buffer.add(
+                        filter_batch(episode, ~non_zero_action_indices)
                     )
 
     def sample(self, num_items: int, **kwargs) -> Optional[SampleBatchType]:
@@ -124,12 +124,12 @@ class CustomReplayBuffer(ReplayBuffer):
         :param kwargs: Forward compatibility kwargs.
         :returns: Concatenated batch of items.
         """
-        if len(self.positive_buffer) == 0:
+        if len(self.non_zero_buffer) == 0:
             return SampleBatch({})
-        num_positive_items = num_items // 2
+        num_non_zero_items = num_items // 2
         return concat_samples(
             [
-                self.positive_buffer.sample(num_positive_items),
-                self.negative_buffer.sample(num_items - num_positive_items),
+                self.non_zero_buffer.sample(num_non_zero_items),
+                self.zero_buffer.sample(num_items - num_non_zero_items),
             ]
         )
