@@ -63,9 +63,9 @@ def upload_and_test_agent(problem_list: List[str]) -> None:
     for filename in problem_list:
         env = gym.wrappers.TimeLimit(
             ast2vec_env_creator(
-                {"problem_list": [filename], "max_clauses": 600}
+                {"problem_list": [filename], "max_clauses": 900}
             ),
-            max_episode_steps=100,
+            max_episode_steps=30,
         )
         obs, done, actions = env.reset(), False, []
         while not done:

@@ -49,7 +49,7 @@ def get_config(problem_list: List[str]) -> DQNConfig:
     :returns: a config
     """
     register_env("ast2vec_saturation", ast2vec_env_creator)
-    env_config = {"problem_list": problem_list, "max_clauses": 600}
+    env_config = {"problem_list": problem_list, "max_clauses": 900}
     config = DQNConfig()
     config.training(
         model={
