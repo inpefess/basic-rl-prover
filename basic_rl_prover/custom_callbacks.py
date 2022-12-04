@@ -47,9 +47,16 @@ def _get_next_task(
         problem_index == problem_indices[-1]
         for problem_index in problem_indices[-10:]
     ):
+        problems_solved = len(
+            [reward for reward in episode_rewards[-10:] if reward > 0.0]
+        )
         if (
-            len([reward for reward in episode_rewards[-10:] if reward > 0.0])
-            > 5
+            problems_solved > 5
+            or all(
+                problem_index == problem_indices[-1]
+                for problem_index in problem_indices[-20:]
+            )
+            or problem_indices[-1] == -1
         ):
             if problem_indices[-1] != -1:
                 return [
@@ -59,16 +66,18 @@ def _get_next_task(
             os.mkdir(GENERATED_PROBLEMS_DIR)
             return [
                 problem_list[
-                    [
-                        problem_index
-                        for problem_index in problem_indices
-                        if problem_index != -1
-                    ][-1]
+                    (
+                        [
+                            problem_index
+                            for problem_index in problem_indices
+                            if problem_index != -1
+                        ][-1]
+                        + 1
+                    )
+                    % len(problem_list)
                 ]
             ]
-        if problem_indices[-1] != -1 and any(
-            reward == 0.0 for reward in episode_rewards[-10:]
-        ):
+        if problems_solved == 0 and problem_indices[-1] != -1:
             return glob(os.path.join(GENERATED_PROBLEMS_DIR, "*.p"))
     return []
 
