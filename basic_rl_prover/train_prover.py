@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 
 import ray
 from ray.air.config import CheckpointConfig, RunConfig
-from ray.rllib.algorithms.dqn import DQNConfig
+from ray.rllib.algorithms.apex_dqn import ApexDQNConfig
 from ray.tune import TuneConfig, Tuner
 from ray.tune.registry import register_env
 
@@ -32,7 +32,7 @@ from basic_rl_prover.custom_dqn import CustomDQN
 from basic_rl_prover.custom_replay_buffer import CustomReplayBuffer
 
 
-def _set_other_parameters(config: DQNConfig) -> None:
+def _set_other_parameters(config: ApexDQNConfig) -> None:
     config.framework("torch")
     config.resources(num_gpus=1)
     config.exploration(explore=True)
@@ -41,7 +41,7 @@ def _set_other_parameters(config: DQNConfig) -> None:
     config.callbacks(CustomCallbacks)
 
 
-def get_config(problem_list: List[str]) -> DQNConfig:
+def get_config(problem_list: List[str]) -> ApexDQNConfig:
     """
     Get a prepacked config.
 
@@ -49,21 +49,24 @@ def get_config(problem_list: List[str]) -> DQNConfig:
     :returns: a config
     """
     register_env("ast2vec_saturation", ast2vec_env_creator)
-    env_config = {"problem_list": problem_list, "max_clauses": 900}
-    config = DQNConfig()
+    env_config = {"problem_list": problem_list, "max_clauses": 1000}
+    config = ApexDQNConfig()
     config.training(
         model={
             "custom_model": ActionSelectionModel,
             "custom_model_config": {"embedding_size": 256},
         },
-        hiddens=[],
+        hiddens=[],  # type:ignore
         dueling=False,
-        replay_buffer_config={
-            "type": CustomReplayBuffer,
-            "capacity": 10000,
-        },
         lr=0.01,
         num_steps_sampled_before_learning_starts=1,
+    )
+    config.replay_buffer_config.update(
+        {
+            "type": CustomReplayBuffer,
+            "capacity": 10000,
+            "worker_side_prioritization": False,
+        }
     )
     config.environment(
         env="ast2vec_saturation",
@@ -72,7 +75,6 @@ def get_config(problem_list: List[str]) -> DQNConfig:
     )
     config.rollouts(
         batch_mode="complete_episodes",
-        horizon=30,
         num_rollout_workers=2,
     )
     _set_other_parameters(config)

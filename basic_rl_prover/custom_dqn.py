@@ -16,41 +16,22 @@
 DQN with customised policy
 ==========================
 """
-import sys
 from typing import Optional, Type
 
-from ray.rllib.algorithms.dqn import DQN
+from ray.rllib.algorithms.apex_dqn import ApexDQN
 from ray.rllib.policy import Policy
 from ray.rllib.utils.annotations import override
-from ray.rllib.utils.typing import ResultDict
 
 from basic_rl_prover.custom_dqn_torch_policy import CustomDQNTorchPolicy
 
 
 # pylint: disable=abstract-method
-class CustomDQN(DQN):
+class CustomDQN(ApexDQN):
     """DQN patched with policy including trajectory post-processing."""
 
-    @override(DQN)
+    @override(ApexDQN)
     def get_default_policy_class(self, config: dict) -> Optional[Type[Policy]]:
         """Return a default Policy class to use, given a config."""
         if config["framework"] == "torch":
             return CustomDQNTorchPolicy
         raise NotImplementedError("don't work with anything but torch")
-
-    @override(DQN)
-    def training_step(self) -> ResultDict:
-        """Don't train if the buffer is empty.
-
-        :returns: the results dict from executing the training iteration.
-        """
-        if (
-            not self.local_replay_buffer
-            or len(self.local_replay_buffer.positive_buffer) == 0
-        ):
-            self.config[
-                "num_steps_sampled_before_learning_starts"
-            ] = sys.maxsize
-        else:
-            self.config["num_steps_sampled_before_learning_starts"] = 1
-        return super().training_step()
