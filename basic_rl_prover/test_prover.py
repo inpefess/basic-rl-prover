@@ -19,7 +19,6 @@ Trained Prover Evaluation
 import os
 from typing import List
 
-import gym
 from gym_saturation.utils import get_positive_actions
 from ray.tune.analysis import ExperimentAnalysis
 
@@ -61,11 +60,8 @@ def upload_and_test_agent(problem_list: List[str]) -> None:
     """
     agent = get_agent(problem_list)
     for filename in problem_list:
-        env = gym.wrappers.TimeLimit(
-            ast2vec_env_creator(
-                {"problem_list": [filename], "max_clauses": 900}
-            ),
-            max_episode_steps=30,
+        env = ast2vec_env_creator(
+            {"problem_list": [filename], "max_clauses": 1000}
         )
         obs, done, actions = env.reset(), False, []
         while not done:
