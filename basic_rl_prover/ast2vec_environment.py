@@ -17,6 +17,7 @@ a wrapper over ``gym-saturation`` environment using ast2vec model to embed
 logical clauses
 """
 from typing import List
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 import gym
@@ -47,20 +48,18 @@ class AST2VecFeatures(gym.Wrapper):
     ):
         """Initialise all the things."""
         super().__init__(env)
-        observation_space: gym.spaces.Dict = (
-            self.observation_space  # type: ignore
-        )
+        action_mask = self.observation_space["action_mask"]  # type:ignore
         avail_actions = gym.spaces.Box(
             low=-1,
             high=1,
             shape=(
-                observation_space["action_mask"].shape[0],
+                action_mask.shape[0],
                 features_num,
             ),
         )
         self.observation_space = gym.spaces.Dict(
             {
-                "action_mask": observation_space["action_mask"],
+                "action_mask": action_mask,
                 "avail_actions": avail_actions,
             }
         )
@@ -94,7 +93,22 @@ class AST2VecFeatures(gym.Wrapper):
         """Apply the agent's action."""
         observation, reward, done, info = self.env.step(action)
         info["real_obs"] = observation["real_obs"]
-        return self._transform(observation), reward, done, info
+        try:
+            return self._transform(observation), reward, done, info
+        except HTTPError as ast2vec_error:
+            if ast2vec_error.code == 507:  # Insufficient Storage
+                return (
+                    {
+                        "action_mask": observation["action_mask"],
+                        "avail_actions": np.zeros(
+                            self.observation_space["avail_actions"].shape
+                        ),
+                    },
+                    -1.0,
+                    True,
+                    info,
+                )
+            raise ast2vec_error
 
     def ast2vec_features(self, literals_str: str) -> dict:
         """
