@@ -19,8 +19,6 @@ Custom Callbacks
 """
 import os
 import re
-import shutil
-from glob import glob
 from hashlib import sha256
 from typing import Dict, List, Optional, Union
 
@@ -36,50 +34,27 @@ from ray.rllib.policy import Policy
 from ray.rllib.utils.typing import PolicyID
 
 GENERATED_PROBLEMS_DIR = os.path.join(os.environ["WORK"], "generated_problems")
+NUM_TASKS = 1
 
 
 def _get_next_task(
-    problem_list: List[str],
-    problem_indices: List[int],
-    episode_rewards: List[float],
+    problem_list: List[str], problem_indices: List[int]
 ) -> List[str]:
-    if all(
-        problem_index == problem_indices[-1]
-        for problem_index in problem_indices[-10:]
-    ):
-        problems_solved = len(
-            [reward for reward in episode_rewards[-10:] if reward > 0.0]
-        )
-        if (
-            problems_solved > 5
-            or all(
-                problem_index == problem_indices[-1]
-                for problem_index in problem_indices[-20:]
-            )
-            or problem_indices[-1] == -1
-        ):
-            if problem_indices[-1] != -1:
-                return [
-                    problem_list[(problem_indices[-1] + 1) % len(problem_list)]
-                ]
-            shutil.rmtree(GENERATED_PROBLEMS_DIR, ignore_errors=True)
-            os.mkdir(GENERATED_PROBLEMS_DIR)
-            return [
-                problem_list[
-                    (
-                        [
-                            problem_index
-                            for problem_index in problem_indices
-                            if problem_index != -1
-                        ][-1]
-                        + 1
-                    )
-                    % len(problem_list)
-                ]
-            ]
-        if problems_solved == 0 and problem_indices[-1] != -1:
-            return glob(os.path.join(GENERATED_PROBLEMS_DIR, "*.p"))
-    return []
+    task = problem_indices[-1] * NUM_TASKS // len(problem_list)
+    problems_tried = set()
+    for i in range(len(problem_indices) - 1, -1, -1):
+        if problem_indices[i] * NUM_TASKS // len(problem_list) != task:
+            break
+        problems_tried.add(problem_indices[i])
+    if len(problems_tried) == len(problem_list) // NUM_TASKS:
+        task = (task + 1) % NUM_TASKS
+    return problem_list[
+        task
+        * len(problem_list)
+        // NUM_TASKS : (task + 1)
+        * len(problem_list)
+        // NUM_TASKS
+    ]
 
 
 def is_trivial_tautology(clause: Clause) -> bool:
@@ -167,6 +142,37 @@ def generate_problems(final_state: Dict[str, Clause]) -> None:
 class CustomCallbacks(DefaultCallbacks):
     """Callbacks for synthetic problems generation and curriculum learning."""
 
+    def on_algorithm_init(
+        self,
+        *,
+        algorithm: Algorithm,
+        **kwargs,
+    ) -> None:
+        """Run when a new algorithm instance has finished setup.
+
+        This method gets called at the end of ``Algorithm.setup()`` after all
+        the initialisation is done, and before actually training starts.
+
+        :param algorithm: Reference to the trainer instance.
+        :param kwargs: Forward compatibility placeholder.
+        """
+        if not algorithm.workers:
+            raise ValueError("Worker set empty.")
+        problem_list = [
+            problem_list
+            for problem_list in algorithm.workers.foreach_worker(
+                lambda worker: worker.foreach_env(lambda env: env.problem_list)
+            )
+            if problem_list
+        ][0][0]
+        algorithm.workers.foreach_worker(
+            lambda worker: worker.foreach_env(
+                lambda env: env.set_task(
+                    problem_list[: len(problem_list) // NUM_TASKS]
+                )
+            )
+        )
+
     def on_episode_end(
         self,
         *,
@@ -239,9 +245,6 @@ class CustomCallbacks(DefaultCallbacks):
             problem_list=problem_list,
             problem_indices=result["sampler_results"]["hist_stats"][
                 "problem_index"
-            ],
-            episode_rewards=result["sampler_results"]["hist_stats"][
-                "episode_reward"
             ],
         )
         if next_task:
