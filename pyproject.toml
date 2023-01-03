@@ -24,6 +24,7 @@ pre-commit = "*"
 black = "*"
 pydocstyle = "*"
 pyenchant = "*"
+tqdm = "*"
 
 [tool.black]
 line-length=79
@@ -62,5 +63,5 @@ incremental = true
 disable_error_code = "no-redef"
 
 [[tool.mypy.overrides]]
-module = ["gym.*"]
+module = ["gym.*", "tqdm.*"]
 ignore_missing_imports = true
