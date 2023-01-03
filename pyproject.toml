@@ -10,8 +10,6 @@ python = "> 3.8, < 3.11"
 ray = {version = "*", extras = ["rllib"]}
 torch = "*"
 gym-saturation = "*"
-tptp-lark-parser = "*"
-protobuf = "<3.21"
 
 [tool.poetry.group.dev.dependencies]
 jupyterlab = "*"
