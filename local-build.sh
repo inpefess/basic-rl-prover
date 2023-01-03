@@ -8,5 +8,6 @@ cd ..
 pydocstyle ${PACKAGE_NAME}
 pylint ${PACKAGE_NAME}
 mypy ${PACKAGE_NAME}
+export TUNE_DISABLE_AUTO_CALLBACK_LOGGERS="1"
 pytest
 scc -i py ${PACKAGE_NAME}

@@ -23,6 +23,7 @@ import ray
 from ray.air.config import CheckpointConfig, RunConfig
 from ray.rllib.algorithms.apex_dqn import ApexDQNConfig
 from ray.tune import TuneConfig, Tuner
+from ray.tune.logger import CSVLoggerCallback
 from ray.tune.registry import register_env
 
 from basic_rl_prover.action_selection_model import ActionSelectionModel
@@ -132,6 +133,7 @@ def train_a_prover(
         local_dir=os.path.join(os.environ["WORK"], "ray_results"),
         checkpoint_config=CheckpointConfig(checkpoint_frequency=1),
         stop=stop,
+        callbacks=[CSVLoggerCallback()],
     )
     tune_config = TuneConfig(time_budget_s=3600)
     Tuner(
