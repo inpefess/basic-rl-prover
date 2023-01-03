@@ -18,6 +18,7 @@ DQN with customised policy
 """
 from typing import Optional, Type
 
+from ray.rllib.algorithms.algorithm_config import AlgorithmConfig
 from ray.rllib.algorithms.apex_dqn import ApexDQN
 from ray.rllib.policy import Policy
 from ray.rllib.utils.annotations import override
@@ -29,8 +30,11 @@ from basic_rl_prover.custom_dqn_torch_policy import CustomDQNTorchPolicy
 class CustomDQN(ApexDQN):
     """DQN patched with policy including trajectory post-processing."""
 
+    @classmethod
     @override(ApexDQN)
-    def get_default_policy_class(self, config: dict) -> Optional[Type[Policy]]:
+    def get_default_policy_class(
+        cls, config: AlgorithmConfig
+    ) -> Optional[Type[Policy]]:
         """Return a default Policy class to use, given a config."""
         if config["framework"] == "torch":
             return CustomDQNTorchPolicy
