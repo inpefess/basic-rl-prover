@@ -10,6 +10,7 @@ python = "> 3.8, < 3.11"
 ray = {version = "*", extras = ["rllib"]}
 torch = "*"
 gym-saturation = "*"
+numpy = "<1.24.0"  # https://github.com/ray-project/ray/issues/31246
 
 [tool.poetry.group.dev.dependencies]
 jupyterlab = "*"
