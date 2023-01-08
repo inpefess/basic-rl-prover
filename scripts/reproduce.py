@@ -30,17 +30,18 @@ else:
 
 
 os.environ["TUNE_DISABLE_AUTO_CALLBACK_LOGGERS"] = "1"
-train_problems_filename = os.path.join(
-    files("basic_rl_prover").joinpath("resources"),  # type: ignore
-    "train-problems.txt",
+resources_folder = files("basic_rl_prover").joinpath("resources")
+train_problems_filename = os.path.join(  # type: ignore
+    resources_folder, "train-problems.txt"
 )
+tptp_problems_folder = TPTP_PROBLEMS_FOLDER
 
 with open(
     train_problems_filename, "r", encoding="utf8"
 ) as train_problems_file:
     train_problems = [
         os.path.join(
-            TPTP_PROBLEMS_FOLDER,
+            tptp_problems_folder,
             train_problem[:3],
             train_problem.replace("\n", ""),
         )
