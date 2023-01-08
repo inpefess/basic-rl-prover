@@ -23,7 +23,11 @@ from typing import Optional, Union
 
 import numpy as np
 from gym_saturation.envs.saturation_env import PROBLEM_FILENAME
-from ray.rllib.policy.sample_batch import SampleBatch, concat_samples
+from ray.rllib.policy.sample_batch import (
+    MultiAgentBatch,
+    SampleBatch,
+    concat_samples,
+)
 from ray.rllib.utils.annotations import override
 from ray.rllib.utils.replay_buffers.replay_buffer import (
     ReplayBuffer,
@@ -55,10 +59,13 @@ class CustomReplayBuffer(ReplayBuffer):
     """
     A custom replay buffer.
 
+    >>> from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
     >>> replay_buffer = CustomReplayBuffer()
     >>> sample_batch = getfixture("sample_batch") # noqa: F821
+    >>> replay_buffer.sample(1000).env_steps()
+    0
     >>> replay_buffer.add(sample_batch)
-    >>> sample = replay_buffer.sample(1000)
+    >>> sample = replay_buffer.sample(1000)[DEFAULT_POLICY_ID]
     >>> sample["rewards"].sum()
     500.0
     >>> set(sample["actions"])
@@ -126,11 +133,14 @@ class CustomReplayBuffer(ReplayBuffer):
         :returns: Concatenated batch of items.
         """
         if len(self.positive_buffer) == 0:
-            return SampleBatch({})
+            return MultiAgentBatch({}, 0)
         num_positive_items = num_items // 2
         return concat_samples(
             [
                 self.positive_buffer.sample(num_positive_items),
                 self.zero_buffer.sample(num_items - num_positive_items),
             ]
-        )
+        ).as_multi_agent()
+
+    def update_priorities(self, prio_dict: dict) -> None:
+        """Ape-X supposes the buffer is prioritised."""

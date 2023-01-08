@@ -105,9 +105,9 @@ def train_a_prover(
     ...     [problem_filename],
     ...     {"training_iteration": 1},
     ...     {
-    ...         "min_sample_timesteps_per_iteration": 1,
     ...         "train_batch_size": 1,
-    ...         "num_workers": 1,
+    ...         "num_rollout_workers": 1,
+    ...         "num_steps_sampled_before_learning_starts": 1,
     ...     }
     ... )
     == Status ==

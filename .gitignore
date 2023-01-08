@@ -22,3 +22,5 @@ doc/build/
 *.snm
 *.toc
 \#*.*\#
+flycheck_*.py
+
