@@ -35,7 +35,7 @@ from basic_rl_prover.custom_replay_buffer import CustomReplayBuffer
 
 def _set_other_parameters(config: ApexDQNConfig) -> None:
     config.framework("torch")
-    config.resources(num_gpus=1)
+    config.resources(num_gpus=0)
     config.exploration(explore=True)
     config.debugging(seed=17)
     config.reporting(min_sample_timesteps_per_iteration=1)
@@ -61,6 +61,7 @@ def get_config(problem_list: List[str]) -> ApexDQNConfig:
         dueling=False,
         lr=0.01,
         num_steps_sampled_before_learning_starts=1,
+        train_batch_size=1024,
     )
     config.replay_buffer_config.update(
         {
@@ -107,7 +108,6 @@ def train_a_prover(
     ...     {
     ...         "train_batch_size": 1,
     ...         "num_rollout_workers": 1,
-    ...         "num_steps_sampled_before_learning_starts": 1,
     ...     }
     ... )
     == Status ==

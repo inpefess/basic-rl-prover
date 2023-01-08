@@ -62,5 +62,5 @@ incremental = true
 disable_error_code = "no-redef"
 
 [[tool.mypy.overrides]]
-module = ["gym.*", "tqdm.*"]
+module = ["gym.*", "tqdm.*", "importlib_resources"]
 ignore_missing_imports = true

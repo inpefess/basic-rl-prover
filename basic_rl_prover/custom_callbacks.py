@@ -241,12 +241,15 @@ class CustomCallbacks(DefaultCallbacks):
             )
             if problem_list
         ][0][0]
-        next_task = _get_next_task(
-            problem_list=problem_list,
-            problem_indices=result["sampler_results"]["hist_stats"][
-                "problem_index"
-            ],
-        )
+        if "problem_index" in result["sampler_results"]["hist_stats"]:
+            next_task = _get_next_task(
+                problem_list=problem_list,
+                problem_indices=result["sampler_results"]["hist_stats"][
+                    "problem_index"
+                ],
+            )
+        else:
+            raise ValueError(result["sampler_results"]["hist_stats"])
         if next_task:
             algorithm.workers.foreach_worker(
                 lambda worker: worker.foreach_env(

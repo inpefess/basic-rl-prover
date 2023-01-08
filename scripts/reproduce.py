@@ -26,8 +26,10 @@ from basic_rl_prover.train_prover import train_a_prover
 if sys.version_info.major == 3 and sys.version_info.minor >= 9:
     from importlib.resources import files
 else:
-    from importlib_resources import files
+    from importlib_resources import files  # pylint: disable=import-error
 
+
+os.environ["TUNE_DISABLE_AUTO_CALLBACK_LOGGERS"] = "1"
 train_problems_filename = os.path.join(
     files("basic_rl_prover").joinpath("resources"),  # type: ignore
     "train-problems.txt",
