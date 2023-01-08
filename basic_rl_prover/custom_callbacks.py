@@ -249,7 +249,7 @@ class CustomCallbacks(DefaultCallbacks):
                 ],
             )
         else:
-            raise ValueError(result["sampler_results"]["hist_stats"])
+            next_task = None
         if next_task:
             algorithm.workers.foreach_worker(
                 lambda worker: worker.foreach_env(
