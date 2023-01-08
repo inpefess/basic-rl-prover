@@ -141,3 +141,6 @@ class CustomReplayBuffer(ReplayBuffer):
                 self.zero_buffer.sample(num_items - num_positive_items),
             ]
         ).as_multi_agent()
+
+    def update_priorities(self, prio_dict: dict) -> None:
+        """Ape-X supposes the buffer is prioritised."""
