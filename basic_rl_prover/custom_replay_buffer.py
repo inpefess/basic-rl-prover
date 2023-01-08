@@ -94,7 +94,7 @@ class CustomReplayBuffer(ReplayBuffer):
         self.positive_buffer = ReplayBuffer(
             positive_capacity, StorageUnit.TIMESTEPS
         )
-        self.zero_buffer = ReplayBuffer(
+        self.non_positive_buffer = ReplayBuffer(
             capacity - positive_capacity, StorageUnit.TIMESTEPS
         )
 
@@ -116,13 +116,12 @@ class CustomReplayBuffer(ReplayBuffer):
                     episode.count,
                     episode[SampleBatch.ACTIONS],
                 )
-                if 0 < num_positive_actions < episode.count:
-                    self.positive_buffer.add(
-                        filter_batch(episode, positive_action_indices)
-                    )
-                    self.zero_buffer.add(
-                        filter_batch(episode, ~positive_action_indices)
-                    )
+                self.positive_buffer.add(
+                    filter_batch(episode, positive_action_indices)
+                )
+                self.non_positive_buffer.add(
+                    filter_batch(episode, ~positive_action_indices)
+                )
 
     def sample(self, num_items: int, **kwargs) -> Optional[SampleBatchType]:
         """
@@ -132,15 +131,23 @@ class CustomReplayBuffer(ReplayBuffer):
         :param kwargs: Forward compatibility kwargs.
         :returns: Concatenated batch of items.
         """
-        if len(self.positive_buffer) == 0:
+        has_positives = len(self.positive_buffer) > 0
+        has_non_positives = len(self.non_positive_buffer) > 0
+        if not has_positives and not has_non_positives:
             return MultiAgentBatch({}, 0)
-        num_positive_items = num_items // 2
-        return concat_samples(
-            [
-                self.positive_buffer.sample(num_positive_items),
-                self.zero_buffer.sample(num_items - num_positive_items),
-            ]
-        ).as_multi_agent()
+        if has_positives and has_non_positives:
+            num_positive_items = num_items // 2
+            return concat_samples(
+                [
+                    self.positive_buffer.sample(num_positive_items),
+                    self.non_positive_buffer.sample(
+                        num_items - num_positive_items
+                    ),
+                ]
+            ).as_multi_agent()
+        if has_positives:
+            return self.positive_buffer.sample(num_items).as_multi_agent()
+        return self.non_positive_buffer.sample(num_items).as_multi_agent()
 
     def update_priorities(self, prio_dict: dict) -> None:
         """Ape-X supposes the buffer is prioritised."""
