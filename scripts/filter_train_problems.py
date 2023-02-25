@@ -1,4 +1,4 @@
-#   Copyright 2022 Boris Shminke
+#   Copyright 2022-2023 Boris Shminke
 #
 #   This file is a derivative work based on the original work of
 #   The Ray Team (https://github.com/ray-project/ray) distributed
@@ -20,15 +20,14 @@
 Filter problems with proofs of particular length
 ================================================
 """
+import json
 import os
 import sys
-
-import orjson
 
 if sys.version_info.major == 3 and sys.version_info.minor >= 9:
     from importlib.resources import files
 else:
-    from importlib_resources import files
+    from importlib_resources import files  # pylint: disable=import-error
 
 
 def filter_train_problems(
@@ -45,7 +44,7 @@ def filter_train_problems(
     with open(statistics_filename, "r", encoding="utf8") as statistics_file:
         problem_statistics = list(
             sorted(
-                map(orjson.loads, statistics_file.readlines()),
+                map(json.loads, statistics_file.readlines()),
                 key=lambda line: line["problem"],
             ),
         )

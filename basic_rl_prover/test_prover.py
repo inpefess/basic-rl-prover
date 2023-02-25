@@ -1,4 +1,4 @@
-#   Copyright 2022 Boris Shminke
+#   Copyright 2022-2023 Boris Shminke
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -63,11 +63,16 @@ def upload_and_test_agent(problem_list: List[str]) -> None:
         env = ast2vec_env_creator(
             {"problem_list": [filename], "max_clauses": 1000}
         )
-        obs, done, actions = env.reset(), False, []
-        while not done:
-            action = agent.compute_single_action(obs, explore=False)
+        observation, terminated, truncated, actions = (
+            env.reset(),
+            False,
+            False,
+            [],
+        )
+        while not (terminated or truncated):
+            action = agent.compute_single_action(observation, explore=False)
             actions.append(action)
-            obs, reward, done, info = env.step(action)
+            observation, reward, terminated, truncated, info = env.step(action)
         print(
             os.path.basename(filename),
             reward,

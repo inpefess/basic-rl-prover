@@ -1,4 +1,4 @@
-#   Copyright 2022 Boris Shminke
+#   Copyright 2022-2023 Boris Shminke
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ A Model for Selecting a Parametric Action
 """
 from typing import Dict, List, Sequence, Tuple
 
-import gym
+import gymnasium as gym
 import torch
 from ray.rllib.algorithms.dqn.dqn_torch_model import DQNTorchModel
 from ray.rllib.utils.torch_utils import FLOAT_MAX, FLOAT_MIN
@@ -31,7 +31,7 @@ class ActionSelectionModel(DQNTorchModel):
     """
     A model for selecting the best action.
 
-    >>> from gym.spaces import Box, Discrete
+    >>> from gymnasium.spaces import Box, Discrete
     >>> action_mask = torch.tensor([0, 1, 0, 0])
     >>> embedding_size = 3
     >>> avail_actions = torch.rand((5, 4, embedding_size))

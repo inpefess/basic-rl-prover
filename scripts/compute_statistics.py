@@ -1,4 +1,4 @@
-#   Copyright 2022 Boris Shminke
+#   Copyright 2022-2023 Boris Shminke
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 Compute basic statistics for attempted problems
 ================================================
 """
+import json
 import os
 import re
 from typing import Tuple
 
-import orjson
 from tqdm import tqdm
 
 
@@ -46,7 +46,7 @@ def cumpute_statistics() -> None:
     for problem in tqdm(problems):
         proof_length, saturation_steps = _compute_proof_stats(problem)
         print(
-            orjson.dumps(
+            json.dumps(  # type: ignore
                 {
                     "problem": problem,
                     "proof_length": proof_length,

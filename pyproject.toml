@@ -50,7 +50,7 @@ ignore-long-lines = "(this_is_a_test_case|https://)"
 max-statements = 10
 
 [tool.pylint.typecheck]
-generated-members = ["orjson", "torch"]
+generated-members = ["torch"]
 
 [tool.pylint.spelling]
 spelling-dict = "en_GB"
@@ -62,5 +62,5 @@ incremental = true
 disable_error_code = "no-redef"
 
 [[tool.mypy.overrides]]
-module = ["gym.*", "tqdm.*", "importlib_resources"]
+module = ["tqdm.*", "importlib_resources"]
 ignore_missing_imports = true

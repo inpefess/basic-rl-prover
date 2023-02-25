@@ -1,4 +1,4 @@
-#   Copyright 2022 Boris Shminke
+#   Copyright 2022-2023 Boris Shminke
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 a wrapper over ``gym-saturation`` environment using ast2vec model to embed
 logical clauses
 """
+import json
 from typing import List
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-import gym
+import gymnasium as gym
 import numpy as np
-import orjson
 
 
 def _pad_features(features: np.ndarray, features_num: int) -> np.ndarray:
@@ -48,7 +48,9 @@ class AST2VecFeatures(gym.Wrapper):
     ):
         """Initialise all the things."""
         super().__init__(env)
-        action_mask = self.observation_space["action_mask"]  # type:ignore
+        action_mask = gym.spaces.Box(
+            low=0, high=1, shape=(env.action_space.n, 1)
+        )
         avail_actions = gym.spaces.Box(
             low=-1,
             high=1,
@@ -91,10 +93,18 @@ class AST2VecFeatures(gym.Wrapper):
 
     def step(self, action):
         """Apply the agent's action."""
-        observation, reward, done, info = self.env.step(action)
+        observation, reward, terminated, truncated, info = self.env.step(
+            action
+        )
         info["real_obs"] = observation["real_obs"]
         try:
-            return self._transform(observation), reward, done, info
+            return (
+                self._transform(observation),
+                reward,
+                terminated,
+                truncated,
+                info,
+            )
         except HTTPError as ast2vec_error:
             if ast2vec_error.code == 507:  # Insufficient Storage
                 return (
@@ -132,7 +142,7 @@ class AST2VecFeatures(gym.Wrapper):
             {"Content-Type": "application/json"},
         )
         with urlopen(req) as response:
-            clause_embedding = orjson.loads(response.read().decode("utf-8"))
+            clause_embedding = json.loads(response.read().decode("utf-8"))
         return clause_embedding
 
 

@@ -1,4 +1,4 @@
-#   Copyright 2022 Boris Shminke
+#   Copyright 2022-2023 Boris Shminke
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ class CustomReplayBuffer(ReplayBuffer):
     >>> set(sample["actions"])
     {0, 1}
     >>> set(sample[SampleBatch.EPS_ID])
-    {1}
+    {0, 1}
     """
 
     def __init__(

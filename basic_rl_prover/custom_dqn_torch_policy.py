@@ -1,4 +1,4 @@
-#   Copyright 2022 Boris Shminke
+#   Copyright 2022-2023 Boris Shminke
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ def spread_reward(sample_batch: SampleBatch) -> None:
     :returns:
     """
     clauses_dict = sample_batch[SampleBatch.INFOS][-1]["real_obs"]
-    positive_actions = get_positive_actions(clauses_dict)
+    positive_actions = get_positive_actions(tuple(clauses_dict.values()))
     proof_length = len(
         set(positive_actions).intersection(
             set(sample_batch[SampleBatch.ACTIONS])
@@ -55,7 +55,7 @@ class CustomDQNTorchPolicy(DQNTorchPolicy):
     """
     Custom policy based on standard DQN one.
 
-    >>> from gym.spaces import Discrete
+    >>> from gymnasium.spaces import Discrete
     >>> dummy_policy = CustomDQNTorchPolicy(Discrete(2), Discrete(2), {})
     >>> sample_batch = getfixture("sample_batch") # noqa: F821
     >>> dummy_policy.postprocess_trajectory(sample_batch[2:])[

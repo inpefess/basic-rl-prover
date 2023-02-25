@@ -1,5 +1,5 @@
 ..
-  Copyright 2022 Boris Shminke
+  Copyright 2022-2023 Boris Shminke
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ Basic Reinforcement Learning Prover
 reinforcement learning library
 <https://docs.ray.io/en/latest/rllib/index.html>`_, `ast2vec encoder
 for abstract syntax trees <https://gitlab.com/bpaassen/ast2vec>`_ and
-`an OpenAI gym environment for saturation provers
+`a Gymnasium environment for saturation provers
 <https://pypi.org/project/gym-saturation>`_ to train an automated
 theorem prover.
 

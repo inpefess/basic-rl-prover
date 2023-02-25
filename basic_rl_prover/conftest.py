@@ -1,4 +1,4 @@
-# Copyright 2022 Boris Shminke
+# Copyright 2022-2023 Boris Shminke
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ from gym_saturation.envs.saturation_env import (
     PROBLEM_FILENAME,
     STATE_DIFF_UPDATED,
 )
-from gym_saturation.utils import Clause
 from pytest import fixture
 from ray.rllib.policy.sample_batch import SampleBatch
 
@@ -51,24 +50,24 @@ def http_server():
 @fixture()
 def sample_batch():
     """Return a sample batch similar to one returned by ``gym_saturation``."""
-    clause1 = Clause(
-        literals="$false",
-        label="false",
-        role="lemma",
-        inference_parents=["initial"],
-        inference_rule="dummy",
-        processed=True,
-        birth_step=1,
-    )
-    clause0 = Clause(
-        literals="p(X)",
-        label="initial",
-        role="lemma",
-        inference_parents=None,
-        inference_rule=None,
-        processed=True,
-        birth_step=0,
-    )
+    clause1 = {
+        "literals": "$false",
+        "label": "false",
+        "role": "lemma",
+        "inference_parents": ("initial",),
+        "inference_rule": "dummy",
+        "processed": 1,
+        "birth_step": 1,
+    }
+    clause0 = {
+        "literals": "p(X)",
+        "label": "initial",
+        "role": "lemma",
+        "inference_parents": (),
+        "inference_rule": "dummy",
+        "processed": 1,
+        "birth_step": 0,
+    }
     return SampleBatch(
         infos=[
             {
@@ -94,6 +93,7 @@ def sample_batch():
         ],
         rewards=np.array([0.0, 0.0, 0.0, 1.0]),
         actions=np.array([0, 1, 0, 1]),
-        dones=np.array([False, True, False, True]),
+        terminateds=np.array([False, True, False, True]),
+        truncateds=np.array([False, False, False, False]),
         eps_id=np.array([0, 0, 1, 1]),
     )
