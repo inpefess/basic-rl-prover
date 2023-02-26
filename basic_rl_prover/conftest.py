@@ -17,10 +17,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
 
 import numpy as np
-from gym_saturation.envs.saturation_env import (
-    PROBLEM_FILENAME,
-    STATE_DIFF_UPDATED,
-)
+from gym_saturation.envs.saturation_env import PROBLEM_FILENAME
 from pytest import fixture
 from ray.rllib.policy.sample_batch import SampleBatch
 
@@ -70,26 +67,10 @@ def sample_batch():
     }
     return SampleBatch(
         infos=[
-            {
-                STATE_DIFF_UPDATED: {0: clause0},
-                PROBLEM_FILENAME: "test",
-                "real_obs": {"initial": clause0},
-            },
-            {
-                STATE_DIFF_UPDATED: {1: clause1},
-                PROBLEM_FILENAME: "test",
-                "real_obs": {"initial": clause0, "false": clause1},
-            },
-            {
-                STATE_DIFF_UPDATED: {0: clause0},
-                PROBLEM_FILENAME: "test",
-                "real_obs": {"initial": clause0},
-            },
-            {
-                STATE_DIFF_UPDATED: {1: clause1},
-                PROBLEM_FILENAME: "test",
-                "real_obs": {"initial": clause0, "false": clause1},
-            },
+            {PROBLEM_FILENAME: "test", "real_obs": (clause0,)},
+            {PROBLEM_FILENAME: "test", "real_obs": (clause0, clause1)},
+            {PROBLEM_FILENAME: "test", "real_obs": (clause0,)},
+            {PROBLEM_FILENAME: "test", "real_obs": (clause0, clause1)},
         ],
         rewards=np.array([0.0, 0.0, 0.0, 1.0]),
         actions=np.array([0, 1, 0, 1]),

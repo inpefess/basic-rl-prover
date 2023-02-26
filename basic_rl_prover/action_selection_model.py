@@ -115,5 +115,7 @@ class ActionSelectionModel(DQNTorchModel):
             self.state_embed_model(embedded_actions.sum(axis=1)), 1
         )
         action_logits = torch.sum(avail_actions * intent_vector, dim=2)
-        inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
+        inf_mask = torch.squeeze(
+            torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
+        )
         return action_logits + inf_mask, state
