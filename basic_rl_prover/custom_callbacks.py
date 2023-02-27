@@ -1,4 +1,4 @@
-#   Copyright 2022 Boris Shminke
+#   Copyright 2022-2023 Boris Shminke
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -20,10 +20,9 @@ Custom Callbacks
 import os
 import re
 from hashlib import sha256
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from gym_saturation.envs.saturation_env import SaturationEnv
-from gym_saturation.utils import Clause
 from ray.rllib.algorithms.algorithm import Algorithm
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.env.base_env import BaseEnv
@@ -57,14 +56,14 @@ def _get_next_task(
     ]
 
 
-def is_trivial_tautology(clause: Clause) -> bool:
+def is_trivial_tautology(clause: Dict[str, Any]) -> bool:
     """
     Check whether a clause contains a literal and its negation.
 
     :param clause: a TPTP clause
     :returns: whether a clause is a trivial tautology or not
     """
-    literals = clause.literals.split("|")
+    literals = clause["literals"].split("|")
     literals_count = len(literals)
     for i, literal in enumerate(literals):
         for j in range(i + 1, literals_count):
@@ -80,7 +79,7 @@ def is_trivial_tautology(clause: Clause) -> bool:
     return False
 
 
-def negate_clause(clause: Clause) -> List[Clause]:
+def negate_clause(clause: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Transform a negation of a clause into list of clauses in CNF.
 
@@ -88,19 +87,19 @@ def negate_clause(clause: Clause) -> List[Clause]:
     :returns: a list of clauses in TPTP syntax.
     """
     skolemised_literals = re.sub(
-        r"X(\d+)", r"generated_symbol_\1", clause.literals
+        r"X(\d+)", r"generated_symbol_\1", clause["literals"]
     )
     literals = skolemised_literals.split("|")
     new_clauses = []
     for literal in literals:
         if "~" in literal:
-            new_clauses.append(Clause(literals=literal.replace("~", "")))
+            new_clauses.append({"literals": literal.replace("~", "")})
         else:
-            new_clauses.append(Clause(literals=f"~{literal}"))
+            new_clauses.append({"literals": f"~{literal}"})
     return new_clauses
 
 
-def generate_problems(final_state: Dict[str, Clause]) -> None:
+def generate_problems(final_state: Dict[str, Dict[str, Any]]) -> None:
     """
     Generate TPTP problems related to failed one.
 
@@ -108,22 +107,22 @@ def generate_problems(final_state: Dict[str, Clause]) -> None:
     """
     original_clauses = "\n".join(
         [
-            f"cnf({label},plain,{clause.literals})."
+            f"cnf({label},plain,{clause['literals']})."
             for label, clause in final_state.items()
-            if clause.inference_rule == "input"
+            if clause["inference_rule"] == "input"
         ]
     )
     generated_non_trivial_clauses = [
         clause
         for clause in final_state.values()
-        if clause.inference_rule != "input"
+        if clause["inference_rule"] != "input"
         and not is_trivial_tautology(clause)
     ]
     for generated_clause in generated_non_trivial_clauses:
         problem_text = "\n".join(
             [original_clauses]
             + [
-                f"cnf({clause.label},plain,{clause.literals})."
+                f"cnf({clause['label']},plain,{clause['literals']})."
                 for clause in negate_clause(generated_clause)
             ]
         )
@@ -241,12 +240,15 @@ class CustomCallbacks(DefaultCallbacks):
             )
             if problem_list
         ][0][0]
-        next_task = _get_next_task(
-            problem_list=problem_list,
-            problem_indices=result["sampler_results"]["hist_stats"][
-                "problem_index"
-            ],
-        )
+        if "problem_index" in result["sampler_results"]["hist_stats"]:
+            next_task = _get_next_task(
+                problem_list=problem_list,
+                problem_indices=result["sampler_results"]["hist_stats"][
+                    "problem_index"
+                ],
+            )
+        else:
+            next_task = None
         if next_task:
             algorithm.workers.foreach_worker(
                 lambda worker: worker.foreach_env(
