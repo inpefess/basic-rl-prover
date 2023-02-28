@@ -6,6 +6,7 @@ cd doc
 make clean html
 cd ..
 pydocstyle ${PACKAGE_NAME}
+flake8 ${PACKAGE_NAME}
 pylint ${PACKAGE_NAME}
 mypy ${PACKAGE_NAME}
 export TUNE_DISABLE_AUTO_CALLBACK_LOGGERS="1"
